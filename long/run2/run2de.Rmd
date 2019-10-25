@@ -1,0 +1,252 @@
+---
+title: "smchd1 long read run 2 analysis"
+author: "Xueyi Dong"
+date: "30/05/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load("countsPrimary.RData")
+# counts_run2 <- c1
+# load("../Charity/counts/counts.RData")
+# counts_run1 <- c1
+```
+
+```{r}
+library(edgeR)
+library(limma)
+source("~/analysis/voom_group/voomByGroup.R")
+# x <- DGEList(counts = cbind(counts_run1$counts, counts_run2$counts))
+x <- DGEList(counts = fc$counts)
+colnames(x)<- c(paste0("BC0", 7:9), paste0("BC", 10:18))
+
+filter <- filterByExpr(x)
+summary(filter)
+x <- x[filter, ]
+x <- calcNormFactors(x)
+lcpm <- cpm(x, log=TRUE)
+
+x$samples$group <- factor(c("wt", "fresia", "fresia", "smchd1", "smchd1", "wt", "wt", "fresia", "wt", "wt", "smchd1", "fresia"))
+x$samples$run <- factor(rep(c(1, 2), c(6,6)))
+x$samples
+
+library(RColorBrewer)
+col <- brewer.pal(3, "Set1")
+par(mfrow=c(1,2))
+plotMDS(lcpm, col=col[x$samples$group], main="group")
+plotMDS(lcpm, col=col[x$samples$run], main = "batch")
+plotMDS(lcpm, col=col[x$samples$group])
+
+# plotMDS(removeBatchEffect(lcpm, batch=x$samples$run), col=col[x$samples$group], main="group")
+```
+Yes, there is batch effect.
+
+### Annotation
+
+```{r annotation}
+library(Mus.musculus)
+geneid <- rownames(x)
+geneid <- substr(geneid, 1, 18)
+genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENSEMBL"), 
+                keytype="ENTREZID")
+genes <- genes[!duplicated(genes$ENTREZID),]
+head(genes)
+x$genes <- genes
+```
+
+### Design and contrast
+
+```{r}
+design <- model.matrix(~0+x$samples$group+x$samples$run)
+colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))
+colnames(design) <- sub("x\\$samples\\$", "", colnames(design))
+cont <- makeContrasts(fresia-wt, smchd1-wt, fresia-smchd1, levels=colnames(design))
+```
+
+```{r}
+# v <- voomByGroup(x, design=design, plot="all")
+v <- voomWithQualityWeights(x, design=design, plot=TRUE)
+```
+
+### Fit
+
+```{r}
+fit <- lmFit(v, design=design)
+fit <- contrasts.fit(fit, contrasts=cont)
+efit <- eBayes(fit)
+dt <- decideTests(efit)
+summary(dt)
+```
+
+### Top table
+
+```{r toptable}
+for (i in 1:3){
+  cat(colnames(efit)[i], "\n")
+  print(topTable(efit, coef=i))
+  cat("\n")
+}
+```
+
+### MD plot
+
+```{r MDplot}
+par(mfrow=c(1,3))
+for (i in 1:3) plotMD(efit, status=dt[,i], column=i, values=c(1,-1), hl.col=c("red", "blue"))
+```
+
+## geneset test from Chen et al. 2015
+```{r}
+up <- read.csv("../Charity/Chen_et_al_2015_PNAS/Upregulated_in_Smchd1_null.csv", skip=1)
+down <- read.csv("../Charity/Chen_et_al_2015_PNAS/Downregulated_in_Smchd1_null.csv", skip=1)
+
+index.up <- x$genes$ENTREZID %in% up$EntrezID
+index.down <- x$genes$ENTREZID %in% down$EntrezID
+
+par(mfrow=c(2,3))
+for (i in 1:3) plotMD(efit, status=as.numeric(index.up), column=i, main=paste0("Up genes in\n", colnames(efit)[i]))
+for (i in 1:3) plotMD(efit, status=as.numeric(index.down), column=i, main=paste0("Down genes in\n", colnames(efit)[i]))
+```
+
+### roast
+```{r}
+index.all <- index.up | index.down
+gene.weights <- rep(0, nrow(x))
+m <- match(up$EntrezID, x$genes$ENTREZID)
+gene.weights[m[!is.na(m)]] <- up$logFC[!is.na(m)]
+m <- match(down$EntrezID, x$genes$ENTREZID)
+gene.weights[m[!is.na(m)]] <- down$logFC[!is.na(m)]
+
+for (i in 1:3) {
+  cat("Test for Kelan's genes in", colnames(cont)[i], "\n")
+  print(roast(v, index.all, gene.weights = gene.weights, design=design, contrast=cont[,i]))
+  cat("\n")
+}
+
+# pdf("barcode.pdf", height=12, width=10)
+png("barcode.png", height = 800, width = 640)
+par(mfrow=c(3,1))
+for(i in 1:3){
+  barcodeplot(efit$t[, i], index=index.all,
+              gene.weights = gene.weights[index.all],
+              main=colnames(cont)[i])
+}
+dev.off()
+```
+
+```{r tt}
+tt_f_wt <- topTable(efit, coef=1, number=Inf)
+tt_s_wt <- topTable(efit, coef=2, number=Inf)
+tt_f_s <- topTable(efit, coef=3, number=Inf)
+write.table(tt_f_wt, file="results/longtt_fresia-wt.txt", sep="\t")
+write.table(tt_s_wt, file="results/longtt_smchd1-wt.txt", sep="\t")
+write.table(tt_f_s, file="results/longtt_fresia-smchd1.txt", sep="\t")
+```
+
+## Combine with short read DE results
+
+### venn diagrams
+
+```{r short}
+stt_f_wt <- read.table("../../short/resultsDE/topTable_fresia-wt.txt", sep="\t")
+stt_s_wt <- read.table("../../short/resultsDE/topTable_smchd1-wt.txt", sep="\t")
+stt_f_s <- read.table("../../short/resultsDE/topTable_fresia-smchd1.txt", sep="\t")
+```
+
+```{r}
+# load("short/sdt.RData")
+# venn
+library(VennDiagram)
+testSameDEGene <- function(ttlong, ttshort, filename){
+  longDE <- rownames(ttlong[ttlong$adj.P.Val<=0.05,])
+  shortDE <- rownames(ttshort[ttshort$adj.P.Val<=0.05,])
+  venn.diagram(list(longDE=longDE, shortDE=shortDE), 
+               filename=paste("results/",filename, ".png", sep="" ), 
+               imagetype = "png", cex=1.6, col ="transparent",
+               fill=c("sienna3", "skyblue3"))
+}
+# 
+testSameDEGene(tt_f_wt, stt_f_wt, "fresia_wt")
+testSameDEGene(tt_s_wt, stt_s_wt, "smchd1_wt")
+testSameDEGene(tt_f_s, stt_f_s, "fresia_smchd1")
+# table(rownames(tt_f_wt[tt_f_wt$adj.P.Val<=0.05,]) %in% rownames(stt_f_wt[stt_f_wt$adj.P.Val<=0.05,]))
+# table(rownames(tt_s_wt[tt_s_wt$adj.P.Val<=0.05,]) %in% rownames(stt_s_wt[stt_s_wt$adj.P.Val<=0.05,]))
+# table(rownames(tt_f_s[tt_f_s$adj.P.Val<=0.05,]) %in% rownames(stt_f_s[stt_f_s$adj.P.Val<=0.05,]))
+```
+
+### rank analysis
+
+aim: to test the number of overlap for top n most significant genes (by FDR)
+
+```{r}
+rankOverlap <- function(tt1, tt2, n){
+  # order by FDR
+  tt1 <- tt1[order(tt1$adj.P.Val), ]
+  tt2 <- tt2[order(tt2$adj.P.Val), ]
+  # calculate overlap length
+  sapply(1:n, function(x){
+    length(intersect(rownames(tt1)[1:x], rownames(tt2)[1:x]))
+  }, simplify = TRUE)
+}
+
+rank500 <- data.frame(
+  n = 1:500,
+  fresiaVSwt = rankOverlap(tt_f_wt, stt_f_wt, 500),
+  smchd1VSwt = rankOverlap(tt_s_wt, stt_s_wt, 500),
+  fresiaVSsmchd1 = rankOverlap(tt_f_s, stt_f_s, 500)
+)
+library(data.table)
+library(ggplot2)
+rank500.tidy <- melt(rank500, "n", variable.name = "comparison", value.name = "overlap")
+ggplot(rank500.tidy, aes(x=n, y=overlap, colour=comparison)) + geom_line() + 
+  ggtitle("Number of overlap in top n genes between short and long read") +
+  theme_bw()
+```
+
+
+
+```{r}
+stat <- fc$stat
+rownames(stat) <- stat[,1]
+colnames(stat) <- c(NA, colnames(stat)[1:12])
+stat <- stat[,-1]
+sum(colSums(stat[c(-2, -8), 7:12]))
+sum(stat[1, 7:12])
+```
+
+## compare long read and short read logFC
+
+```{r}
+compLogFC <- function(x, y, title){
+  gene.common <- intersect(x$ENTREZID, y$ENTREZID)
+  m1 <- match(gene.common, x$ENTREZID)
+  m2 <- match(gene.common, y$ENTREZID)
+  logFC.x <- x$logFC[m1]
+  logFC.y <- y$logFC[m2]
+  logFC.cor <- cor(logFC.x, logFC.y)
+  smoothScatter(logFC.x, logFC.y,
+                xlab = "long read log flod change",
+                ylab = "short read log fold change",
+                main = paste0(title, ", cor=", round(logFC.cor, 3)))
+  abline(coef=c(0, 1))
+  abline(v=0, lty=3)
+  abline(h=0, lty=3)
+}
+
+pdf("compLogFC.pdf")
+compLogFC(tt_f_wt, stt_f_wt, title = "fresia vs wt")
+compLogFC(tt_s_wt, stt_s_wt, title = "smchd1 vs wt")
+compLogFC(tt_f_s, stt_f_s, title = "fresia vs smchd1")
+dev.off()
+pdf("compLogFC_all.pdf", width=15, height = 5)
+par(mfrow=c(1,3))
+compLogFC(tt_f_wt, stt_f_wt, title = "fresia vs wt")
+compLogFC(tt_s_wt, stt_s_wt, title = "smchd1 vs wt")
+compLogFC(tt_f_s, stt_f_s, title = "fresia vs smchd1")
+dev.off()
+```
+
