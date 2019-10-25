@@ -1,0 +1,339 @@
+---
+title: "smchd1 long read MommeD1 only analysis"
+author: "Xueyi Dong"
+date: "27/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load("countsPrimary.RData")
+# counts_run2 <- c1
+# load("../Charity/counts/counts.RData")
+# counts_run1 <- c1
+```
+
+```{r}
+library(edgeR)
+library(limma)
+# source("~/analysis/voom_group/voomByGroup.R")
+# x <- DGEList(counts = cbind(counts_run1$counts, counts_run2$counts))
+x <- DGEList(counts = fc$counts)
+colnames(x)<- c(paste0("BC0", 7:9), paste0("BC", 10:18))
+x$samples$group <- factor(c("wt", "fresia", "fresia", "smchd1", "smchd1", "wt", "wt", "fresia", "wt", "wt", "smchd1", "fresia"))
+x$samples$run <- factor(rep(c(1, 2), c(6,6)))
+x$samples$sample <- c("Fr31", "Fr46", "Fr42", "MD143", "MD142", "MD135", "Fr31", "Fr15", "Fr17", "MD114", "MD140", "Fr46")
+x$samples
+
+# remove Fresia samples and low count samples
+x <- x[, -c(2, 3, 8, 12)]
+
+filter <- filterByExpr(x)
+summary(filter)
+x <- x[filter, ]
+x <- calcNormFactors(x)
+lcpm <- cpm(x, log=TRUE)
+
+
+x$samples
+summary(x$samples$lib.size)
+
+library(RColorBrewer)
+col <- brewer.pal(3, "Set1")
+
+pdf("plots/mds.pdf", height = 4, width = 4)
+plotMDS(lcpm, col=col[x$samples$group], pch = c(16, 17)[x$samples$run], cex = 1.3)
+legend("topright", 
+       c("Smchd1-null run 1", "Smchd1-null run 2", "wt run 1", "wt run 2"), 
+       pch = c(16, 17, 16, 17), 
+       col = col[c(1, 1, 2, 2)], 
+       text.col = col[c(1, 1, 2, 2)],
+       pt.cex = 1.3)
+dev.off()
+
+
+# plotMDS(removeBatchEffect(lcpm, batch=x$samples$run), col=col[x$samples$group], main="group")
+```
+
+### Annotation
+
+```{r annotation}
+library(Mus.musculus)
+geneid <- rownames(x)
+geneid <- substr(geneid, 1, 18)
+genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENSEMBL"), 
+                keytype="ENTREZID")
+genes <- genes[!duplicated(genes$ENTREZID),]
+head(genes)
+x$genes <- genes
+```
+
+### Design and contrast
+
+```{r}
+design <- model.matrix(~0+x$samples$group+x$samples$run)
+colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))
+colnames(design) <- sub("x\\$samples\\$", "", colnames(design))
+cont <- makeContrasts(smchd1-wt, levels=colnames(design))
+```
+
+```{r}
+# v <- voomByGroup(x, design=design, plot="all")
+pdf("plots/voom.pdf", height = 4, width = 6)
+v <- voomWithQualityWeights(x, design=design, plot=TRUE, col=col[x$samples$group])
+dev.off()
+```
+
+### Fit
+
+```{r}
+fit <- lmFit(v, design=design)
+fit <- contrasts.fit(fit, contrasts=cont)
+efit <- eBayes(fit)
+dt <- decideTests(efit, p.value = 0.3)
+summary(dt)
+```
+
+### Top table
+
+```{r toptable}
+# for (i in 1:3){
+  # cat(colnames(efit)[i], "\n")
+  print(topTable(efit, coef=1))
+  # cat("\n")
+# }
+```
+
+### MD plot
+
+```{r MDplot}
+pdf("plots/md.pdf")
+  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "green"))
+dev.off()
+```
+
+### heatmap
+
+```{r}
+library(pheatmap)
+annotation_col <- data.frame(group = x$samples$group)
+rownames(annotation_col) <- colnames(x)
+pdf("plots/heatmap.pdf", width = 4)
+pheatmap(lcpm[dt!=0,], scale = "row", 
+         annotation_col = annotation_col,
+         show_rownames = FALSE)
+dev.off()
+```
+
+
+## geneset test from Chen et al. 2015
+```{r}
+up <- read.csv("../Charity/Chen_et_al_2015_PNAS/Upregulated_in_Smchd1_null.csv", skip=1)
+down <- read.csv("../Charity/Chen_et_al_2015_PNAS/Downregulated_in_Smchd1_null.csv", skip=1)
+
+index.up <- x$genes$ENTREZID %in% up$EntrezID
+index.down <- x$genes$ENTREZID %in% down$EntrezID
+
+
+plotMD(efit, status=as.numeric(index.up), column=1, main=paste0("Up genes in\n", colnames(efit)[1]))
+plotMD(efit, status=as.numeric(index.down), column=1, main=paste0("Down genes in\n", colnames(efit)[1]))
+```
+
+### roast
+```{r}
+index.all <- index.up | index.down
+gene.weights <- rep(0, nrow(x))
+m <- match(up$EntrezID, x$genes$ENTREZID)
+gene.weights[m[!is.na(m)]] <- up$logFC[!is.na(m)]
+m <- match(down$EntrezID, x$genes$ENTREZID)
+gene.weights[m[!is.na(m)]] <- down$logFC[!is.na(m)]
+
+# for (i in 1:3) {
+  cat("Test for Kelan's genes in", colnames(cont)[1], "\n")
+  print(roast(v, index.all, gene.weights = gene.weights[index.all], design=design, contrast=cont[,1]))
+  cat("\n")
+# }
+
+# pdf("barcode.pdf", height=12, width=10)
+# png("barcode.png", height = 800, width = 640)
+# par(mfrow=c(3,1))
+# for(i in 1:3){
+  barcodeplot(efit$t[, 1], index=index.all,
+              gene.weights = gene.weights[index.all],
+              main=colnames(cont)[1])
+# }
+# dev.off()
+```
+
+### Mark Kelan's genes in top table
+
+```{r}
+tt <- topTable(efit, coef=1, n=Inf)
+tt$status <- "ns"
+tt$status[tt$logFC > 0 & tt$adj.P.Val<0.1] <- "up"
+tt$status[tt$logFC < 0 & tt$adj.P.Val<0.1] <- "down"
+tt$status.chen <- "ns"
+tt$status.chen[match(up$EntrezID, tt$ENTREZID)] <- "up"
+tt$status.chen[match(down$EntrezID, tt$ENTREZID)] <- "down"
+tt$status.all <- paste(tt$status, tt$status.chen, sep="_")
+tt$status.all <- as.factor(tt$status.all)
+table(tt$status.all)
+
+# write.table(topTable(efit, coef=1, n=Inf), file="results/topTableShortMD.txt", sep='\t')
+```
+
+## Gene set test from Chen et al., use less genes
+
+Use FDR cutoff of 0.001, there will be 218 up and 54 down genes.
+
+```{r}
+up.strict <- up[up$adj.P.Val < 0.0001, ]
+down.strict <- down[down$adj.P.Val < 0.0001, ]
+dim(up.strict)
+dim(down.strict)
+index.up.strict <- x$genes$ENTREZID %in% up.strict$EntrezID
+index.down.strict <- x$genes$ENTREZID %in% down.strict$EntrezID
+index.strict <- index.up.strict | index.down.strict
+# calculate gene weight
+gene.weights <- rep(0, nrow(x))
+m <- match(up.strict$EntrezID, x$genes$ENTREZID)
+gene.weights[m[!is.na(m)]] <- up.strict$logFC[!is.na(m)]
+m <- match(down.strict$EntrezID, x$genes$ENTREZID)
+gene.weights[m[!is.na(m)]] <- down.strict$logFC[!is.na(m)]
+# roast
+cat("Test for Kelan's genes in", colnames(cont)[1], "\n")
+print(roast(v, index.strict, gene.weights = gene.weights[index.strict], design=design, contrast=cont[,1]))
+cat("\n")
+```
+
+Up p-value is 0.019. Nice!
+
+Barcode plot
+
+```{r}
+pdf("plots/barcodeStrict.pdf", height = 4)
+barcodeplot(efit$t[, 1], index=index.strict,
+            gene.weights = gene.weights[index.strict],
+            main=colnames(cont)[1])
+dev.off()
+```
+
+
+### Glimma MD plot
+
+```{r eval=FALSE}
+lcpm <- cpm(x, log=TRUE)
+
+levels(tt$status.all)
+cols <- c("red", "blue", "lightskyblue", "mediumpurple", "midnightblue", "gray50", "red4", "lightcoral")
+library(Glimma)
+glMDPlot(efit,  status=tt$status.all[match(rownames(dt), rownames(tt))],
+         cols=cols,
+         main="Smchd1 vs WT", side.main="SYMBOL",
+         counts=lcpm,
+         groups = x$samples$group,
+         launch = FALSE)
+```
+
+
+## Gene set test using Maayan's short read data
+
+### Roast
+
+```{r}
+shortTopTable <- read.table("../../short/resultsDE/topTableShortMD.txt", sep="\t")
+index <- x$genes$ENTREZID %in% shortTopTable$ENTREZID[shortTopTable$adj.P.Val<0.1]
+m <- match(shortTopTable$ENTREZID[shortTopTable$adj.P.Val<0.1], x$genes$ENTREZID)
+gene.weights <- shortTopTable$logFC[na.omit(m)]
+
+cat("Test for Maayan's genes in", colnames(cont)[1], "\n")
+print(roast(v, index, gene.weights = gene.weights, design=design, contrast=cont[,1]))
+cat("\n")
+```
+
+```{r}
+  barcodeplot(efit$t[, 1], index=index,
+              gene.weights = gene.weights,
+              main="Maayan's short read significant genes in long read")
+```
+
+## Mark short read results in top table
+
+```{r}
+shortDownGenes <- shortTopTable[shortTopTable[m, "adj.P.Val"]<0.1 & shortTopTable[m, "logFC"]<0, "ENTREZID"]
+shortUpGenes <- shortTopTable[shortTopTable[m, "adj.P.Val"]<0.1 & shortTopTable[m, "logFC"]>0, "ENTREZID"]
+tt$status.short <- "ns"
+tt$status.short[tt$ENTREZID %in% shortUpGenes] <- "up"
+tt$status.short[tt$ENTREZID %in% shortDownGenes] <- "down"
+tt$status.allWithShort <- paste(tt$status.all, tt$status.short, sep="_")
+tt$status.LongAndShort <- paste(tt$status, tt$status.short, sep="_")
+table(tt$status.LongAndShort)
+```
+
+### Compare long read and Maayan's short read log FC 
+
+```{r}
+merged <- merge(tt, shortTopTable, by="ENTREZID")
+par(mfrow=c(1,2))
+smoothScatter(merged$logFC.x, merged$logFC.y, 
+              main = paste("logFC, cor=", round(cor(merged$logFC.x, merged$logFC.y), 3), sep=""))
+abline(coef = c(0, 1))
+smoothScatter(merged$AveExpr.x, merged$AveExpr.y, 
+              main=paste("Average expression, cor=", round(cor(merged$AveExpr.x, merged$AveExpr.y), 3), sep=""))
+abline(coef = c(0, 1))
+```
+
+### Compare long read and old short read log FC
+
+```{r}
+tt.chen <- read.table("~/analysis/smchd1/old/TopTable.txt", sep="\t")
+m <- match(tt$ENTREZID, tt.chen$EntrezID)
+cor(tt$logFC, -tt.chen$logFC[m], use = "complete.obs")
+
+m.up <- match(up.strict$EntrezID, tt$ENTREZID)
+m.down <- match(down.strict$EntrezID, tt$ENTREZID)
+
+smoothScatter(tt$logFC, -tt.chen$logFC[m],
+              xlab = "long read log FC",
+              ylab = "short read log FC",
+              )
+abline(coef = c(0, 1))
+abline(v=0)
+abline(h=0)
+# highlight significant genes
+points(tt$logFC[m.up], -tt.chen$logFC[m][m.up], col="red", pch = 20)
+points(tt$logFC[m.down], -tt.chen$logFC[m][m.down], col="green", pch = 20)
+```
+
+The correlation is only 0.17. That's low.
+
+Let's compare t.
+
+```{r}
+cor(tt$t, -tt.chen$t[m], use = "complete.obs")
+smoothScatter(tt$t, -tt.chen$t[m],
+              xlab = "long read t-statistics",
+              ylab = "short read t-statistics",
+              )
+abline(coef = c(0, 1))
+abline(v=0)
+abline(h=0)
+# highlight significant genes
+points(tt$t[m.up], -tt.chen$t[m][m.up], col="red", pch = 20)
+points(tt$t[m.down], -tt.chen$t[m][m.down], col="green", pch = 20)
+```
+
+Oh, even lower
+
+## Save top table
+
+```{r}
+write.table(topTable(efit, coef=1, n=Inf), file = "results/TopTableMD.txt", sep="\t")
+```
+
+
+
+
