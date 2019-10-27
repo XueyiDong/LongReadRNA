@@ -1,7 +1,7 @@
 ---
 title: "smchd1 long read MommeD1 only analysis"
 author: "Xueyi Dong"
-date: "27/09/2019"
+date: "25/10/2019"
 output: html_document
 ---
 
@@ -58,6 +58,22 @@ dev.off()
 # plotMDS(removeBatchEffect(lcpm, batch=x$samples$run), col=col[x$samples$group], main="group")
 ```
 
+Merge reads from the same that was sequenced twice
+
+```{r}
+# merge from run 2 to run 1
+x$counts[, 1] <- x$counts[,1] + x$counts[, 5]
+x$samples$lib.size[1] <- x$samples$lib.size[1] + x$samples$lib.size[5]
+x$samples$run[1] <- "NA"
+# delete the sample from run 2
+x <- x[,-5]
+x <- calcNormFactors(x)
+lcpm <- cpm(x, log=TRUE)
+par(mfrow=c(1, 2))
+plotMDS(lcpm, col=col[x$samples$group], main = "dim 1 and 2")
+plotMDS(lcpm, col=col[x$samples$group], dim.plot = c(3,4), main = "dim 3 and 4")
+```
+
 ### Annotation
 
 ```{r annotation}
@@ -74,7 +90,7 @@ x$genes <- genes
 ### Design and contrast
 
 ```{r}
-design <- model.matrix(~0+x$samples$group+x$samples$run)
+design <- model.matrix(~0+x$samples$group)
 colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))
 colnames(design) <- sub("x\\$samples\\$", "", colnames(design))
 cont <- makeContrasts(smchd1-wt, levels=colnames(design))
@@ -97,6 +113,8 @@ dt <- decideTests(efit, p.value = 0.3)
 summary(dt)
 ```
 
+Wow - way more DE genes when we merge the rep samples!
+
 ### Top table
 
 ```{r toptable}
@@ -111,7 +129,7 @@ summary(dt)
 
 ```{r MDplot}
 pdf("plots/md.pdf")
-  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "green"))
+  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "blue"))
 dev.off()
 ```
 
@@ -168,26 +186,7 @@ gene.weights[m[!is.na(m)]] <- down$logFC[!is.na(m)]
 # dev.off()
 ```
 
-### Mark Kelan's genes in top table
-
-```{r}
-tt <- topTable(efit, coef=1, n=Inf)
-tt$status <- "ns"
-tt$status[tt$logFC > 0 & tt$adj.P.Val<0.1] <- "up"
-tt$status[tt$logFC < 0 & tt$adj.P.Val<0.1] <- "down"
-tt$status.chen <- "ns"
-tt$status.chen[match(up$EntrezID, tt$ENTREZID)] <- "up"
-tt$status.chen[match(down$EntrezID, tt$ENTREZID)] <- "down"
-tt$status.all <- paste(tt$status, tt$status.chen, sep="_")
-tt$status.all <- as.factor(tt$status.all)
-table(tt$status.all)
-
-# write.table(topTable(efit, coef=1, n=Inf), file="results/topTableShortMD.txt", sep='\t')
-```
-
 ## Gene set test from Chen et al., use less genes
-
-Use FDR cutoff of 0.001, there will be 218 up and 54 down genes.
 
 ```{r}
 up.strict <- up[up$adj.P.Val < 0.0001, ]
@@ -205,11 +204,11 @@ m <- match(down.strict$EntrezID, x$genes$ENTREZID)
 gene.weights[m[!is.na(m)]] <- down.strict$logFC[!is.na(m)]
 # roast
 cat("Test for Kelan's genes in", colnames(cont)[1], "\n")
-print(roast(v, index.strict, gene.weights = gene.weights[index.strict], design=design, contrast=cont[,1]))
+print(roast(v, index.strict, gene.weights = gene.weights[index.strict], design=design, contrast=cont[,1]), nrot = 9999)
 cat("\n")
 ```
 
-Up p-value is 0.019. Nice!
+Up p-value is getting higher...emmmmm
 
 Barcode plot
 
@@ -221,70 +220,6 @@ barcodeplot(efit$t[, 1], index=index.strict,
 dev.off()
 ```
 
-
-### Glimma MD plot
-
-```{r eval=FALSE}
-lcpm <- cpm(x, log=TRUE)
-
-levels(tt$status.all)
-cols <- c("red", "blue", "lightskyblue", "mediumpurple", "midnightblue", "gray50", "red4", "lightcoral")
-library(Glimma)
-glMDPlot(efit,  status=tt$status.all[match(rownames(dt), rownames(tt))],
-         cols=cols,
-         main="Smchd1 vs WT", side.main="SYMBOL",
-         counts=lcpm,
-         groups = x$samples$group,
-         launch = FALSE)
-```
-
-
-## Gene set test using Maayan's short read data
-
-### Roast
-
-```{r}
-shortTopTable <- read.table("../../short/resultsDE/topTableShortMD.txt", sep="\t")
-index <- x$genes$ENTREZID %in% shortTopTable$ENTREZID[shortTopTable$adj.P.Val<0.1]
-m <- match(shortTopTable$ENTREZID[shortTopTable$adj.P.Val<0.1], x$genes$ENTREZID)
-gene.weights <- shortTopTable$logFC[na.omit(m)]
-
-cat("Test for Maayan's genes in", colnames(cont)[1], "\n")
-print(roast(v, index, gene.weights = gene.weights, design=design, contrast=cont[,1]))
-cat("\n")
-```
-
-```{r}
-  barcodeplot(efit$t[, 1], index=index,
-              gene.weights = gene.weights,
-              main="Maayan's short read significant genes in long read")
-```
-
-## Mark short read results in top table
-
-```{r}
-shortDownGenes <- shortTopTable[shortTopTable[m, "adj.P.Val"]<0.1 & shortTopTable[m, "logFC"]<0, "ENTREZID"]
-shortUpGenes <- shortTopTable[shortTopTable[m, "adj.P.Val"]<0.1 & shortTopTable[m, "logFC"]>0, "ENTREZID"]
-tt$status.short <- "ns"
-tt$status.short[tt$ENTREZID %in% shortUpGenes] <- "up"
-tt$status.short[tt$ENTREZID %in% shortDownGenes] <- "down"
-tt$status.allWithShort <- paste(tt$status.all, tt$status.short, sep="_")
-tt$status.LongAndShort <- paste(tt$status, tt$status.short, sep="_")
-table(tt$status.LongAndShort)
-```
-
-### Compare long read and Maayan's short read log FC 
-
-```{r}
-merged <- merge(tt, shortTopTable, by="ENTREZID")
-par(mfrow=c(1,2))
-smoothScatter(merged$logFC.x, merged$logFC.y, 
-              main = paste("logFC, cor=", round(cor(merged$logFC.x, merged$logFC.y), 3), sep=""))
-abline(coef = c(0, 1))
-smoothScatter(merged$AveExpr.x, merged$AveExpr.y, 
-              main=paste("Average expression, cor=", round(cor(merged$AveExpr.x, merged$AveExpr.y), 3), sep=""))
-abline(coef = c(0, 1))
-```
 
 ### Compare long read and old short read log FC
 
