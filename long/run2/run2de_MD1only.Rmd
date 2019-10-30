@@ -33,7 +33,7 @@ x <- x[, -c(2, 3, 8, 12)]
 
 filter <- filterByExpr(x)
 summary(filter)
-x <- x[filter, ]
+x <- x[filter, keep.lib.sizes=FALSE]
 x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
 
@@ -67,6 +67,7 @@ x$samples$lib.size[1] <- x$samples$lib.size[1] + x$samples$lib.size[5]
 x$samples$run[1] <- "NA"
 # delete the sample from run 2
 x <- x[,-5]
+x$samples
 x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
 par(mfrow=c(1, 2))
@@ -224,6 +225,7 @@ dev.off()
 ### Compare long read and old short read log FC
 
 ```{r}
+tt <- topTable(efit, number=Inf)
 tt.chen <- read.table("~/analysis/smchd1/old/TopTable.txt", sep="\t")
 m <- match(tt$ENTREZID, tt.chen$EntrezID)
 cor(tt$logFC, -tt.chen$logFC[m], use = "complete.obs")
@@ -243,7 +245,7 @@ points(tt$logFC[m.up], -tt.chen$logFC[m][m.up], col="red", pch = 20)
 points(tt$logFC[m.down], -tt.chen$logFC[m][m.down], col="green", pch = 20)
 ```
 
-The correlation is only 0.17. That's low.
+The correlation is only 0.7. That's low.
 
 Let's compare t.
 
@@ -270,5 +272,10 @@ write.table(topTable(efit, coef=1, n=Inf), file = "results/TopTableMD.txt", sep=
 ```
 
 
+```{r}
+library(ggplot2)
+ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
+  geom_bar(stat="identity")
+```
 
 
