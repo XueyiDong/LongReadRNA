@@ -147,7 +147,6 @@ pheatmap(lcpm[dt!=0,], scale = "row",
 dev.off()
 ```
 
-
 ## geneset test from Chen et al. 2015
 ```{r}
 up <- read.csv("../Charity/Chen_et_al_2015_PNAS/Upregulated_in_Smchd1_null.csv", skip=1)
