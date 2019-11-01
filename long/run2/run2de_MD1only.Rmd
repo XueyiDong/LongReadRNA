@@ -264,6 +264,25 @@ points(tt$t[m.down], -tt.chen$t[m][m.down], col="green", pch = 20)
 
 Oh, even lower
 
+### Compare log FC in glimma plot
+
+```{r}
+m <- match(tt$ENTREZID, tt.chen$EntrezID)
+m2 <- match(tt$ENTREZID, rownames(lcpm))
+rownames(x$genes) <- x$genes$ENTREZID
+genes <- x$genes[m2,]
+genes$long.read.adj.P.Val <- tt$adj.P.Val
+genes$short.read.adj.P.Val <- tt.chen$adj.P.Val[m]
+glXYPlot(tt$logFC, -tt.chen$logFC[m], counts = lcpm[m2,], launch=FALSE, 
+         groups = x$samples$group,
+         anno = genes,
+         side.main = "SYMBOL",
+         xlab = "long read logFC", ylab = "short read logFC",
+         status = dt[m2,]
+         )
+```
+
+
 ## Save top table
 
 ```{r}
