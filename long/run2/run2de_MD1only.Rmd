@@ -58,7 +58,7 @@ dev.off()
 # plotMDS(removeBatchEffect(lcpm, batch=x$samples$run), col=col[x$samples$group], main="group")
 ```
 
-Merge reads from the same that was sequenced twice
+Merge reads from the same sample that was sequenced twice
 
 ```{r}
 # merge from run 2 to run 1
@@ -70,9 +70,13 @@ x <- x[,-5]
 x$samples
 x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
-par(mfrow=c(1, 2))
-plotMDS(lcpm, col=col[x$samples$group], main = "dim 1 and 2")
-plotMDS(lcpm, col=col[x$samples$group], dim.plot = c(3,4), main = "dim 3 and 4")
+
+pdf("plots/mds_merged.pdf", height = 4, width = 7)
+par(xpd=TRUE, mar =c(3.1, 4.1, 4.1, 8.1))
+plotMDS(lcpm, col=col[x$samples$group], labels = 1:7)
+# plot(1,1, type="n", yaxt="n", xaxt="n", ylab="", xlab="", frame.plot=FALSE)
+legend("topright",inset=c(-0.31,0), c("Smchd1-null", "wt"), text.col = col[c(1,2)])
+dev.off()
 ```
 
 ### Annotation
@@ -99,7 +103,7 @@ cont <- makeContrasts(smchd1-wt, levels=colnames(design))
 
 ```{r}
 # v <- voomByGroup(x, design=design, plot="all")
-pdf("plots/voom.pdf", height = 4, width = 6)
+pdf("plots/voom.pdf", height = 4, width = 8)
 v <- voomWithQualityWeights(x, design=design, plot=TRUE, col=col[x$samples$group])
 dev.off()
 ```
@@ -124,6 +128,7 @@ Wow - way more DE genes when we merge the rep samples!
   print(topTable(efit, coef=1))
   # cat("\n")
 # }
+tt <- topTable(efit, coef=1, number=Inf)
 ```
 
 ### MD plot
@@ -136,14 +141,25 @@ dev.off()
 
 ### heatmap
 
+Use top 150 genes
+
 ```{r}
 library(pheatmap)
+topGenes <- match(tt[1:200, 1], x$genes$ENTREZID)
+
 annotation_col <- data.frame(group = x$samples$group)
+ann_colors = list(
+  group = c(smchd1 = col[1], wt = col[2])
+)
 rownames(annotation_col) <- colnames(x)
 pdf("plots/heatmap.pdf", width = 4)
-pheatmap(lcpm[dt!=0,], scale = "row", 
+pheatmap(lcpm[topGenes,], scale = "row", 
+         color = colorRampPalette(colors = c("blue","white","red"))(100),
          annotation_col = annotation_col,
-         show_rownames = FALSE)
+         annotation_colors = ann_colors,
+         show_rownames = FALSE,
+         labels_col = 1:7,
+         border_color = NA)
 dev.off()
 ```
 
@@ -281,6 +297,17 @@ glXYPlot(tt$logFC, -tt.chen$logFC[m], counts = lcpm[m2,], launch=FALSE,
          status = dt[m2,]
          )
 ```
+
+See if any gene is changed to different direction in the two datasets
+
+```{r}
+up.long <- tt$ENTREZID[tt$adj.P.Val <= 0.3 & tt$logFC > 0]
+down.long <- tt$ENTREZID[tt$adj.P.Val <= 0.3 & tt$logFC < 0]
+up.long[up.long %in% down.strict$EntrezID]
+down.long[down.long %in% up.strict$EntrezID]
+```
+
+Yes there is some.
 
 
 ## Save top table
