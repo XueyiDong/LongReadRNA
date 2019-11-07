@@ -42,17 +42,17 @@ x$samples
 summary(x$samples$lib.size)
 
 library(RColorBrewer)
-col <- brewer.pal(3, "Set1")
+col <- brewer.pal(3, "Set2")
 
-pdf("plots/mds.pdf", height = 4, width = 4)
-plotMDS(lcpm, col=col[x$samples$group], pch = c(16, 17)[x$samples$run], cex = 1.3)
-legend("topright", 
-       c("Smchd1-null run 1", "Smchd1-null run 2", "wt run 1", "wt run 2"), 
-       pch = c(16, 17, 16, 17), 
-       col = col[c(1, 1, 2, 2)], 
-       text.col = col[c(1, 1, 2, 2)],
-       pt.cex = 1.3)
-dev.off()
+# pdf("plots/mds.pdf", height = 4, width = 4)
+# plotMDS(lcpm, col=col[x$samples$group], pch = c(16, 17)[x$samples$run], cex = 1.3)
+# legend("topright", 
+#        c("Smchd1-null run 1", "Smchd1-null run 2", "wt run 1", "wt run 2"), 
+#        pch = c(16, 17, 16, 17), 
+#        col = col[c(1, 1, 2, 2)], 
+#        text.col = col[c(1, 1, 2, 2)],
+#        pt.cex = 1.3)
+# dev.off()
 
 
 # plotMDS(removeBatchEffect(lcpm, batch=x$samples$run), col=col[x$samples$group], main="group")
@@ -71,9 +71,9 @@ x$samples
 x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
 
-pdf("plots/mds_merged.pdf", height = 4, width = 7)
+pdf("plots/mds_merged.pdf", height = 5, width = 7)
 par(xpd=TRUE, mar =c(3.1, 4.1, 4.1, 8.1))
-plotMDS(lcpm, col=col[x$samples$group], labels = 1:7)
+plotMDS(lcpm, col=col[x$samples$group], labels = 1:7, asp = 1)
 # plot(1,1, type="n", yaxt="n", xaxt="n", ylab="", xlab="", frame.plot=FALSE)
 legend("topright",inset=c(-0.31,0), c("Smchd1-null", "wt"), text.col = col[c(1,2)])
 dev.off()
@@ -114,7 +114,7 @@ dev.off()
 fit <- lmFit(v, design=design)
 fit <- contrasts.fit(fit, contrasts=cont)
 efit <- eBayes(fit)
-dt <- decideTests(efit, p.value = 0.3)
+dt <- decideTests(efit, p.value = 0.2)
 summary(dt)
 ```
 
@@ -145,7 +145,7 @@ Use top 150 genes
 
 ```{r}
 library(pheatmap)
-topGenes <- match(tt[1:200, 1], x$genes$ENTREZID)
+topGenes <- match(tt[1:75, 1], x$genes$ENTREZID)
 
 annotation_col <- data.frame(group = x$samples$group)
 ann_colors = list(
@@ -236,6 +236,34 @@ barcodeplot(efit$t[, 1], index=index.strict,
 dev.off()
 ```
 
+## Gene set test of imprinted genes
+
+```{r}
+imprinted <- read.delim("imprinted_genelist.txt")
+head(imprinted)
+index.imprinted <- x$genes$SYMBOL %in% imprinted$Loci
+cat("Test for imprinted genes in", colnames(cont)[1], "\n")
+print(roast(v, index.imprinted, design=design, contrast=cont[,1]), nrot = 9999)
+cat("\n")
+```
+
+MD plot highlighting imprinted genes
+
+```{r}
+status.imprinted <- rep(0, nrow(x))
+status.imprinted[x$genes$SYMBOL %in% imprinted[imprinted$Expressed.Parental.Allele == "M", 1]] <- 1
+status.imprinted[x$genes$SYMBOL %in% imprinted[imprinted$Expressed.Parental.Allele == "P", 1]] <- -1
+plotMD(efit, status = status.imprinted, main = "Imprinted genes")
+```
+
+
+barcode plot
+
+```{r}
+barcodeplot(efit$t[, 1], index=index.imprinted,
+            main=colnames(cont)[1])
+```
+
 
 ### Compare long read and old short read log FC
 
@@ -323,4 +351,7 @@ ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
   geom_bar(stat="identity")
 ```
 
+```{r}
+sessionInfo()
+```
 
