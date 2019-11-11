@@ -16,7 +16,9 @@ setwd("~/analysis/smchd1/long/run2/QC")
 ```
 
 ```{r}
-qcdata <- read_tsv("NanoRResult/rep1/Exp/metadata.txt")
+rep1 <- read_tsv("NanoRResult/rep1/Exp/metadata.txt")
+rep2 <- read_tsv("NanoRResult/rep2/Exp/metadata.txt")
+qcdata <- rbind(rep1, rep2)
 ```
 
 calculate 0.99 quantile of read length

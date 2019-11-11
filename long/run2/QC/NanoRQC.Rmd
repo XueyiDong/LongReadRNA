@@ -48,4 +48,3 @@ List2 <- NanoPrepareG(DataSummary=pathRep2, DataFastq=pathRep2, Cores = 1, Label
 Table2 <- NanoTableG(NanoGList = List2, DataOut="NanoRResult/rep2", GCC=FALSE)
 NanoStatsG(NanoGList = List2, NanoGTable = Table2, DataOut="NanoRResult/rep2")
 ```
-

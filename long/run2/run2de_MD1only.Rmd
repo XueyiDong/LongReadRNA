@@ -141,11 +141,11 @@ dev.off()
 
 ### heatmap
 
-Use top 150 genes
+Use top 200 genes
 
 ```{r}
 library(pheatmap)
-topGenes <- match(tt[1:75, 1], x$genes$ENTREZID)
+topGenes <- match(tt[1:200, 1], x$genes$ENTREZID)
 
 annotation_col <- data.frame(group = x$samples$group)
 ann_colors = list(

@@ -15,12 +15,14 @@ module load python
 sftwr=/stornext/General/data/user_managed/grpu_mritchie_1/LuyiTian/git/scFLT
 anno=/wehisan/home/allstaff/d/dong.x/annotation/Mouse
 input=/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA_rep2/data/scBarcode.fq
-out=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT
+out=/stornext/General/data/user_managed/grpu_mritchie_1/XueyiDong/smchd1/long/scFLT
+config=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT/config_bulk_nanopore.json
+
 
 python $sftwr/sc_long_pipeline.py \
  --gff3 $anno/gencode.vM23.annotation.gff3\
  --infq $input\
  --outdir $out/run2 \
  --genomefa $anno/mm10/mm10.fa\
- --config_file $out/config_bulk_nanopore.json\
+ --config_file $config\
  --minimap2 /wehisan/home/allstaff/d/dong.x/Programs/minimap2
