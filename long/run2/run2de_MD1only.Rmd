@@ -85,7 +85,8 @@ dev.off()
 library(Mus.musculus)
 geneid <- rownames(x)
 geneid <- substr(geneid, 1, 18)
-genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENSEMBL"), 
+genes <- select(Mus.musculus, keys=geneid, 
+                columns=c("SYMBOL", "TXCHROM","ENSEMBL"), 
                 keytype="ENTREZID")
 genes <- genes[!duplicated(genes$ENTREZID),]
 head(genes)
@@ -111,10 +112,10 @@ dev.off()
 ### Fit
 
 ```{r}
-fit <- lmFit(v, design=design)
-fit <- contrasts.fit(fit, contrasts=cont)
+fit <- lmFit(v, design = design)
+fit <- contrasts.fit(fit, contrasts = cont)
 efit <- eBayes(fit)
-dt <- decideTests(efit, p.value = 0.2)
+dt <- decideTests(efit, p.value = 0.25)
 summary(dt)
 ```
 
@@ -220,7 +221,8 @@ m <- match(down.strict$EntrezID, x$genes$ENTREZID)
 gene.weights[m[!is.na(m)]] <- down.strict$logFC[!is.na(m)]
 # roast
 cat("Test for Kelan's genes in", colnames(cont)[1], "\n")
-print(roast(v, index.strict, gene.weights = gene.weights[index.strict], design=design, contrast=cont[,1]), nrot = 9999)
+print(roast(v, index.strict, gene.weights = gene.weights[index.strict], 
+            design=design, contrast=cont[,1], nrot = 9999))
 cat("\n")
 ```
 

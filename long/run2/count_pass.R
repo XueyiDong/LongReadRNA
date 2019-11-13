@@ -14,8 +14,9 @@ files <- c(paste0(path1.bam, files.bam[1:6]), paste0(path2.bam, files.bam[7:12])
 #-------------------------------------- fc
 library(Rsubread)
 fc <- featureCounts(files=files, annot.inbuilt="mm10", allowMultiOverlap=FALSE, nthreads=8, isLongRead=TRUE,primaryOnly=TRUE)
+colnames(fc$stat)=c("Status", files.bam)
 save(fc, file="countsPrimaryPass.RData")
-colnames(fc$stat)=files.bam
+
 sum(fc$stat[1,-1])
 # colnames(c2$stat) <- c("Status", paste0("BC", targets$barcode))
 # c2$stat
