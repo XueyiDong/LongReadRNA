@@ -45,7 +45,8 @@ pdf("lengthpassfail.pdf")
 qcdata$pass <- qcdata$Quality > 7
 ggplot(qcdata, aes(x = `Length of Read`, fill = pass)) +
   geom_density(alpha = 0.4) +
-  xlim(NA, cutoff)
+  xlim(NA, cutoff) +
+  theme_bw()
 dev.off()
 ```
 

@@ -79,6 +79,17 @@ legend("topright",inset=c(-0.31,0), c("Smchd1-null", "wt"), text.col = col[c(1,2
 dev.off()
 ```
 
+```{r}
+pdf("plots/libsize.pdf", height = 5)
+library(ggplot2)
+ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
+  geom_bar(stat="identity") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_discrete(limits = x$samples$sample, labels=1:7)
+dev.off()
+```
+
+
 ### Annotation
 
 ```{r annotation}
@@ -347,11 +358,7 @@ write.table(topTable(efit, coef=1, n=Inf), file = "results/TopTableMD.txt", sep=
 ```
 
 
-```{r}
-library(ggplot2)
-ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
-  geom_bar(stat="identity")
-```
+
 
 ```{r}
 sessionInfo()
