@@ -80,12 +80,13 @@ dev.off()
 ```
 
 ```{r}
-pdf("plots/libsize.pdf", height = 5)
+pdf("plots/libsize.pdf", height = 5, width = 8)
 library(ggplot2)
 ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
   geom_bar(stat="identity") +
   scale_fill_brewer(palette = "Set2") +
-  scale_x_discrete(limits = x$samples$sample, labels=1:7)
+  scale_x_discrete(limits = x$samples$sample, labels=1:7) +
+  theme_bw()
 dev.off()
 ```
 
