@@ -52,6 +52,17 @@ d <- suppressWarnings(dmPrecision(d, design, BPPARAM = BiocParallel::MulticorePa
 plotPrecision(d)
 ```
 
+Check precision value.
+
+Note: dispersion = 1 / (1 + precision)
+
+```{r}
+head(mean_expression(d))
+common_precision(d)
+head(genewise_precision(d))
+```
+
+
 ```{r}
 # look into NA dispersion genes
 NA.genes <- which(is.na(genewise_precision(d)))
@@ -61,27 +72,19 @@ NA.genes <- which(is.na(genewise_precision(d)))
 ## proportion estimation
 
 ```{r}
-d <- dmFit(d, design = design, verbose=1, BPPARAM = BiocParallel::MulticoreParam(32))
+d <- suppressWarnings(dmFit(d, design = design, verbose=1, BPPARAM = BiocParallel::MulticoreParam(16)))
 head(proportions(d))
 ```
 ## testing for differential transcript usage
 
 ```{r}
-contr <- makeContrasts(fresia-wt, smchd1-wt, fresia-smchd1, levels=colnames(design))
-d1 <- dmTest(d, contrast = contr[,1], verbose = 1, BPPARAM = BiocParallel::MulticoreParam(16))
-d2 <- dmTest(d, contrast = contr[,2], verbose = 1, BPPARAM = BiocParallel::MulticoreParam(16))
-d3 <- dmTest(d, contrast = contr[,3], verbose = 1, BPPARAM = BiocParallel::MulticoreParam(16))
+head(coefficients(d), level="feature")
+d <- dmTest(d, coef = "groupwt")
 ```
+
+
 ```{r}
-head(results(d1))
-plotPValues(d1)
-plotPValues(d1, level="feature")
-head(results(d2))
-plotPValues(d2)
-plotPValues(d2, level="feature")
-head(results(d3))
-plotPValues(d3)
-plotPValues(d3, level="feature")
+head(results(d))
 ```
 
 ```{r}
