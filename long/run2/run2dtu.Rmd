@@ -50,7 +50,7 @@ head(genes)
 
 ```{r dmDSdata}
 d <- dmDSdata(counts = cbind(counts[,c(1,2)], counts[,3:ncol(counts)][,sel]), samples = samples[sel,])
-d <- dmFilter(d, min_samps_gene_expr = 2, min_samps_feature_expr = 2, min_gene_expr = 10, min_feature_expr = 5, run_gene_twice = T)
+d <- dmFilter(d, min_samps_gene_expr = 7, min_samps_feature_expr = 3, min_gene_expr = 10, min_feature_expr = 10, run_gene_twice = T)
 plotData(d)
 ```
 
@@ -61,7 +61,7 @@ precision: dispersion
 some gene have NA precision and it will cause problem in downstream analysis
 
 ```{r}
-design <- model.matrix(~group, data=samples(d))
+design <- model.matrix(~group, data=DRIMSeq::samples(d))
 colnames(design) <- sub("group", "", colnames(design))
 set.seed(1904)
 d <- suppressWarnings(dmPrecision(d, design, BPPARAM = BiocParallel::MulticoreParam(16)))
@@ -102,7 +102,7 @@ head(results(d))
 plotPValues(d)
 ```
 
-Testing results on feature level
+Testing results on feature level (not that important for us)
 
 ```{r}
 head(results(d, level = "feature"))
@@ -116,10 +116,33 @@ res <- results(d)
 res <- res[order(res$pvalue, decreasing = FALSE), ]
 m <- match(substr(res$gene_id, 1, 18), genes$ENSEMBL)
 res <- cbind(res, SYMBOL=genes$SYMBOL[m])
-write.table(res, "DTUres.tsv", sep = "\t")
-top_gene_id <- res$gene_id[1]
-plotProportions(d, gene_id = top_gene_id, group_variable = "group")
+write.table(res, "DTUres.tsv", sep = "\t", row.names = FALSE)
+# top_gene_id <- res$gene_id[1]
+# TO DO: change group color; change title of plot to symbol
+library(RColorBrewer)
+library(ggplot2)
+col <- brewer.pal(3, "Set2")
+# top 10 genes
+pdf("plots/DTUProp.pdf")
+for (i in 1:10){
+  p <- plotProportions(d, gene_id = res$gene_id[i], group_variable = "group", 
+                       plot_type = "lineplot", group_colors = col[1:2]) + 
+    ggtitle(res$SYMBOL[i])
+  print(p)
+}
+dev.off()
+
 ```
+
+Check status of imprinted genes
+
+```{r}
+imprinted <- read.delim("imprinted_genelist.txt", sep = "\t", stringsAsFactors = FALSE)
+m <- na.omit(match(imprinted$Loci, res$SYMBOL))
+res.imp <- res[m,]
+
+```
+
 
 Two-stage test (code copied from DRIMSeq vignette)
 
