@@ -2,7 +2,7 @@
     "comment":"this is the edited config for nanopore bulk long read data. use splice annotation in alignment.",
     "pipeline_parameters":{
         "do_genome_alignment":false,
-        "do_isoform_identification":true,
+        "do_isoform_identification":false,
         "do_read_realignment":true,
         "do_transcript_quantification":true
     },
