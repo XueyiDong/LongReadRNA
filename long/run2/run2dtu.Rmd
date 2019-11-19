@@ -24,8 +24,11 @@ counts <- read.csv("../scFLT/run1/transcript_count.csv")
 m <- match(colnames(counts)[3:ncol(counts)], scBarcode$barcode)
 colnames(counts)[3:ncol(counts)] <- scBarcode$sample[m]
 colnames(counts)[1] <- "feature_id"
-head(counts)
-group <- scBarcode$group[m]
+# combine the wt sample that was sequenced twice
+counts$BC07 <- counts$BC07 + counts$BC13
+BC13 <- which(colnames(counts)=="BC13")
+counts <- counts[,-BC13]
+group <- scBarcode$group[m][-(BC13-2)]
 samples <- data.frame(sample_id = colnames(counts)[3:ncol(counts)], group=group)
 sel <- group != "fresia" & group != "none"
 group <- group[sel]
@@ -106,16 +109,43 @@ head(results(d, level = "feature"))
 plotPValues(d, level = "feature")
 ```
 
-explore results
+explore results (gene level)
 
 ```{r}
 res <- results(d)
 res <- res[order(res$pvalue, decreasing = FALSE), ]
 m <- match(substr(res$gene_id, 1, 18), genes$ENSEMBL)
 res <- cbind(res, SYMBOL=genes$SYMBOL[m])
+write.table(res, "DTUres.tsv", sep = "\t")
 top_gene_id <- res$gene_id[1]
 plotProportions(d, gene_id = top_gene_id, group_variable = "group")
 ```
+
+Two-stage test (code copied from DRIMSeq vignette)
+
+```{r}
+library(stageR)
+## Assign gene-level pvalues to the screening stage
+pScreen <- results(d)$pvalue
+names(pScreen) <- results(d)$gene_id
+## Assign transcript-level pvalues to the confirmation stage
+pConfirmation <- matrix(results(d, level = "feature")$pvalue, ncol = 1)
+rownames(pConfirmation) <- results(d, level = "feature")$feature_id
+## Create the gene-transcript mapping
+tx2gene <- results(d, level = "feature")[, c("feature_id", "gene_id")]
+## Create the stageRTx object and perform the stage-wise analysis
+stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
+alpha = 0.05)
+getSignificantGenes(stageRObj)
+getSignificantTx(stageRObj)
+padj <- getAdjustedPValues(stageRObj, order = TRUE,
+onlySignificantGenes = FALSE)
+head(padj)
+```
+
+
 
 
 ## use diffSplice
