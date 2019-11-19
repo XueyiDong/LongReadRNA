@@ -77,78 +77,20 @@ head(proportions(d))
 ```
 ## testing for differential transcript usage
 
+Test results on gene level
+
 ```{r}
-head(coefficients(d), level="feature")
 d <- dmTest(d, coef = "groupwt")
-```
-
-
-```{r}
 head(results(d))
+plotPValues(d)
 ```
+
+Testing results on feature level
 
 ```{r}
-res1 <- merge(proportions(d1), results(d1, level="feature"), by=c("feature_id", "gene_id"))
-res2 <- merge(proportions(d2), results(d2, level="feature"), by=c("feature_id", "gene_id"))
-res3 <- merge(proportions(d3), results(d3, level="feature"), by=c("feature_id", "gene_id"))
-res1 <- res1[order(res1$adj_pvalue),]
-res2 <- res2[order(res2$adj_pvalue),]
-res3 <- res3[order(res3$adj_pvalue),]
-
-write.table(res1, file="dtu/fresia_wt.txt", sep="\t", row.names = F)
-write.table(res2, file="dtu/smchd1_wt.txt", sep="\t", row.names = F)
-write.table(res3, file="dtu/fresia_smchd1.txt", sep="\t", row.names = F)
+head(results(d, level = "feature"))
+plotPValues(d, level = "feature")
 ```
-
-gene level test 
-
-```{r}
-gres1 <- results(d1)
-gres1 <- gres1[order(gres1$adj_pvalue),]
-gres2 <- results(d2)
-gres2 <- gres2[order(gres2$adj_pvalue),]
-gres3 <- results(d3)
-gres3 <- gres3[order(gres3$adj_pvalue),]
-```
-
-Get the number of significant genes
-
-```{r}
-nSigGene <- data.frame(
-  method=rep("DRIMSeq", 3),
-  contrast=c("fresiaVSwt", "smchd1VSwt", "fresiaVSsmchd1"),
-  n=c(nrow(gres1[gres1$adj_pvalue<0.05,]), nrow(gres2[gres2$adj_pvalue<0.05,]), nrow(gres3[gres3$adj_pvalue<0.05,])),
-  stringsAsFactors = F)
-
-# colnames(nSigGene) <- c("method", "contrast", "n")
-```
-
-
-compare results with short read
-
-```{r}
-shortDSdir <- "../../../short/resultsDS"
-short_res <- c("topSplice_G_fresia-wt.txt", "topSplice_G_smchd1-wt.txt", "topSplice_G_fresia-smchd1.txt")
-sres1 <- read.delim(paste(shortDSdir, short_res[1], sep="/"))
-sres2 <- read.delim(paste(shortDSdir, short_res[2], sep="/"))
-sres3 <- read.delim(paste(shortDSdir, short_res[3], sep="/"))
-
-resm1 <- merge(gres1, sres1, by.x="gene_id", by.y="GeneID")
-resm1 <- resm1[order(resm1$adj_pvalue),]
-resm2 <- merge(gres2, sres2, by.x="gene_id", by.y="GeneID")
-resm2 <- resm2[order(resm2$adj_pvalue),]
-resm3 <- merge(gres3, sres3, by.x="gene_id", by.y="GeneID")
-resm3 <- resm3[order(resm3$adj_pvalue),]
-
-table(resm1$adj_pvalue<=0.05)
-table(resm1$FDR<=0.05)
-
-write.table(resm1, file="dtu/fresia_wt_longandshort.txt", sep="\t", row.names = F)
-write.table(resm2, file="dtu/smchd1_wt_longandshort.txt", sep="\t", row.names = F)
-write.table(resm3, file="dtu/fresia_smchd1_longandshort.txt", sep="\t", row.names = F)
-```
-
-
 
 ## Two-stage test
 
