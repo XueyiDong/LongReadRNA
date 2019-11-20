@@ -27,7 +27,8 @@ Length distribution without cutoff
 pdf("length.pdf", height = 5)
 ggplot(qcdata, aes(x = `Length of Read` )) +
   geom_density() +
-  theme_bw()
+  theme_bw() +
+  coord_trans(x = "log10")
 dev.off()
 ```
 

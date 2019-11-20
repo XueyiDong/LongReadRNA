@@ -127,12 +127,14 @@ pdf("plots/DTUProp.pdf")
 for (i in 1:20){
   p <- plotProportions(d, gene_id = res$gene_id[i], group_variable = "group", 
                        plot_type = "ribbonplot", group_colors = col[1:2]) + 
-    ggtitle(res$SYMBOL[i])
+    ggtitle(res$SYMBOL[i]) +
+    theme(legend.text=element_text(size=5))
   print(p)
 }
 dev.off()
 
 ```
+
 
 Check status of imprinted genes
 
@@ -169,6 +171,12 @@ onlySignificantGenes = FALSE)
 head(padj)
 ```
 
+
+# Use Gviz to plot transcripts of DTU genes
+
+```{r}
+Library(Gviz)
+```
 
 
 
