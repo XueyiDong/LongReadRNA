@@ -63,6 +63,14 @@ dev.off()
 ```
 
 length vs quality, box plot
+
+
+```{r}
+quantile(qcdata$`Length of Read`, 1/3)
+quantile(qcdata$`Length of Read`, 2/3)
+quantile(qcdata$`Length of Read`, 0.95)
+```
+
 ```{r}
 qcdata$length <- "medium"
 qcdata$length[qcdata$`Length of Read` < quantile(qcdata$`Length of Read`, 1/3)] <- "short"

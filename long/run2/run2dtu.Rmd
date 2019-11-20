@@ -175,7 +175,16 @@ head(padj)
 # Use Gviz to plot transcripts of DTU genes
 
 ```{r}
-Library(Gviz)
+library(Gviz)
+library(GenomicFeatures)
+gff <- "../scFLT/run1/isoform_annotated.gff3"
+anno <- makeTxDbFromGFF(gff, organism = "Mus musculus")
+tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5", 
+                           start = 32736314, end = 32785626)
+gtrack <- GenomeAxisTrack()
+pdf("plots/genePisd.pdf", height = 4)
+plotTracks(list(gtrack, tr_Pisd), transcriptAnnotation="symbol")
+dev.off()
 ```
 
 
