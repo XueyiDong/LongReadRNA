@@ -122,11 +122,11 @@ write.table(res, "DTUres.tsv", sep = "\t", row.names = FALSE)
 library(RColorBrewer)
 library(ggplot2)
 col <- brewer.pal(3, "Set2")
-# top 10 genes
+# top 20 genes
 pdf("plots/DTUProp.pdf")
-for (i in 1:10){
+for (i in 1:20){
   p <- plotProportions(d, gene_id = res$gene_id[i], group_variable = "group", 
-                       plot_type = "lineplot", group_colors = col[1:2]) + 
+                       plot_type = "ribbonplot", group_colors = col[1:2]) + 
     ggtitle(res$SYMBOL[i])
   print(p)
 }
@@ -143,6 +143,7 @@ res.imp <- res[m,]
 
 ```
 
+None of these imprinted genes are significant.
 
 Two-stage test (code copied from DRIMSeq vignette)
 

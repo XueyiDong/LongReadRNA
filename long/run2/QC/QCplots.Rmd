@@ -21,6 +21,17 @@ rep2 <- read_tsv("NanoRResult/rep2/Exp/metadata.txt")
 qcdata <- rbind(rep1, rep2)
 ```
 
+Length distribution without cutoff
+
+```{r}
+pdf("length.pdf", height = 5)
+ggplot(qcdata, aes(x = `Length of Read` )) +
+  geom_density() +
+  theme_bw()
+dev.off()
+```
+
+
 calculate 0.99 quantile of read length
 
 ```{r}
