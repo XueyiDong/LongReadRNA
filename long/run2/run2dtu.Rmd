@@ -159,14 +159,14 @@ Two-stage test (code copied from DRIMSeq vignette)
 library(stageR)
 ## Assign gene-level pvalues to the screening stage
 pScreen <- res$pvalue
-strp <- function(x) substr(x,1,18)
-names(pScreen) <- strp(results(d)$gene_id)
+# strp <- function(x) substr(x,1,18)
+names(pScreen) <- results(d)$gene_id
 ## Assign transcript-level pvalues to the confirmation stage
 pConfirmation <- matrix(res.txp$pvalue, ncol = 1)
-rownames(pConfirmation) <- strp(res.txp$feature_id)
+rownames(pConfirmation) <- res.txp$feature_id
 ## Create the gene-transcript mapping
 tx2gene <- res.txp[,c("feature_id", "gene_id")]
-for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
+# for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
 ## Create the stageRTx object and perform the stage-wise analysis
 stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
 pScreenAdjusted = FALSE, tx2gene = tx2gene)
@@ -174,12 +174,14 @@ stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
 alpha = 0.05)
 
 suppressWarnings({
-  drim.padj <- getAdjustedPValues(stageRObj, order=FALSE,
+  drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
                                   onlySignificantGenes=TRUE)
 })
 head(drim.padj)
+write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
 ```
 
+Only gene Pisd is significant.
 
 # Use Gviz to plot transcripts of DTU genes
 
