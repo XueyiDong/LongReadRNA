@@ -5,7 +5,7 @@
 #PBS -M dong.x@wehi.edu.au
 #PBS -m abe
 #PBS -j oe
-#PBS -o scFLT2.o2
+#PBS -o scFLT2.o
 
 cd /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT
 
@@ -15,7 +15,7 @@ module load python
 sftwr=/stornext/General/data/user_managed/grpu_mritchie_1/LuyiTian/git/scFLT
 anno=/wehisan/home/allstaff/d/dong.x/annotation/Mouse
 input=/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA_rep2/data/scBarcode.fq
-out=/stornext/General/data/user_managed/grpu_mritchie_1/XueyiDong/smchd1/long/scFLT
+out=/wehisan/general/old-prkfs2/disk503/GP_Transfer/XueyiDong/smchd1/scFLT
 config=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT/config_bulk_nanopore.json
 
 

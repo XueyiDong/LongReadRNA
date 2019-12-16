@@ -113,9 +113,15 @@ explore results (gene level)
 
 ```{r}
 res <- results(d)
-res <- res[order(res$pvalue, decreasing = FALSE), ]
-m <- match(substr(res$gene_id, 1, 18), genes$ENSEMBL)
-res <- cbind(res, SYMBOL=genes$SYMBOL[m])
+res.txp <- results(d, level = "feature")
+## turn NA p value into 1
+no.na <- function(x) ifelse(is.na(x), 1, x)
+res$pvalue <- no.na(res$pvalue)
+res.txp$pvalue <- no.na(res.txp$pvalue)
+
+# res <- res[order(res$pvalue, decreasing = FALSE), ]
+# m <- match(substr(res$gene_id, 1, 18), genes$ENSEMBL)
+# res <- cbind(res, SYMBOL=genes$SYMBOL[m])
 write.table(res, "DTUres.tsv", sep = "\t", row.names = FALSE)
 # top_gene_id <- res$gene_id[1]
 # TO DO: change group color; change title of plot to symbol
@@ -123,8 +129,8 @@ library(RColorBrewer)
 library(ggplot2)
 col <- brewer.pal(3, "Set2")
 # top 20 genes
-pdf("plots/DTUProp.pdf")
-for (i in 1:20){
+pdf("plots/DTUProp.pdf", height = 6, width = 9)
+for (i in 1:5){
   p <- plotProportions(d, gene_id = res$gene_id[i], group_variable = "group", 
                        plot_type = "ribbonplot", group_colors = col[1:2]) + 
     ggtitle(res$SYMBOL[i]) +
@@ -152,23 +158,26 @@ Two-stage test (code copied from DRIMSeq vignette)
 ```{r}
 library(stageR)
 ## Assign gene-level pvalues to the screening stage
-pScreen <- results(d)$pvalue
-names(pScreen) <- results(d)$gene_id
+pScreen <- res$pvalue
+strp <- function(x) substr(x,1,18)
+names(pScreen) <- strp(results(d)$gene_id)
 ## Assign transcript-level pvalues to the confirmation stage
-pConfirmation <- matrix(results(d, level = "feature")$pvalue, ncol = 1)
-rownames(pConfirmation) <- results(d, level = "feature")$feature_id
+pConfirmation <- matrix(res.txp$pvalue, ncol = 1)
+rownames(pConfirmation) <- strp(res.txp$feature_id)
 ## Create the gene-transcript mapping
-tx2gene <- results(d, level = "feature")[, c("feature_id", "gene_id")]
+tx2gene <- res.txp[,c("feature_id", "gene_id")]
+for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
 ## Create the stageRTx object and perform the stage-wise analysis
 stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
 pScreenAdjusted = FALSE, tx2gene = tx2gene)
 stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
 alpha = 0.05)
-getSignificantGenes(stageRObj)
-getSignificantTx(stageRObj)
-padj <- getAdjustedPValues(stageRObj, order = TRUE,
-onlySignificantGenes = FALSE)
-head(padj)
+
+suppressWarnings({
+  drim.padj <- getAdjustedPValues(stageRObj, order=FALSE,
+                                  onlySignificantGenes=TRUE)
+})
+head(drim.padj)
 ```
 
 
