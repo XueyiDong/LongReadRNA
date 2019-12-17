@@ -142,14 +142,6 @@ dev.off()
 ```
 
 
-Check status of imprinted genes
-
-```{r}
-imprinted <- read.delim("imprinted_genelist.txt", sep = "\t", stringsAsFactors = FALSE)
-m <- na.omit(match(imprinted$Loci, res$SYMBOL))
-res.imp <- res[m,]
-
-```
 
 None of these imprinted genes are significant.
 
@@ -171,7 +163,7 @@ tx2gene <- res.txp[,c("feature_id", "gene_id")]
 stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
 pScreenAdjusted = FALSE, tx2gene = tx2gene)
 stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
-alpha = 0.05)
+alpha = 0.25)
 
 suppressWarnings({
   drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
@@ -208,25 +200,28 @@ library(limma)
 ```
 
 ```{r filter}
-rownames(counts) <- counts$feature_id
-y <- DGEList(counts=counts[,c(-1,-2)])
-filter <- filterByExpr(y, design = design)
-table(filter)
-y <- y[filter,]
+# rownames(counts) <- counts$feature_id
+# y <- DGEList(counts=counts[,c(-1,-2)])
+# table(filter)
+# y <- y[filter,]
+
+# use dataset filtered by DRIMSeq
+y <- DGEList(counts = as.matrix(DRIMSeq::counts(d)[,c(-1, -2)]), samples = DRIMSeq::samples(d))
+rownames(y) <- counts(d)$feature_id
 ```
 
 ```{r MDS}
 y <- calcNormFactors(y)
 y$samples
 cpm <- cpm(y, log=T)
-plotMDS(cpm, col=as.numeric(group))
+plotMDS(cpm, col=as.numeric(as.factor(group)))
 ```
 
 ### Annotation
 
 ```{r annotation}
 library(Mus.musculus)
-geneid <- counts$gene_id[filter]
+geneid <- counts(d)$gene_id
 geneid <- substr(geneid, 1, 18)
 genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENTREZID"), 
                 keytype="ENSEMBL")
@@ -238,89 +233,30 @@ y$genes <- genes
 ```
 
 ```{r fit}
-contr <- makeContrasts(fresia-wt, smchd1-wt, fresia-smchd1, levels=colnames(design))
 v <- voom(y, design, plot=T)
 fit <- lmFit(v,design)
-fit <- contrasts.fit(fit, contr)
 efit <- eBayes(fit)
 dt <- decideTests(efit)
 summary(dt)
 ```
 
 ```{r tt}
-tt_f_wt <- topTable(efit, coef=1, number=Inf)
-tt_s_wt <- topTable(efit, coef=2, number=Inf)
-tt_f_s <- topTable(efit, coef=3, number=Inf)
+tt <- topTable(efit,  number=Inf)
 ```
 
 differential exon retention
 
 ```{r}
-geneid <- counts[filter,1]
-featureid <- counts[filter,2]
+geneid <- counts(d)$gene_id
+featureid <- counts(d)$feature_id
 
 ex <- diffSplice(fit, geneid = geneid, exonid=featureid)
-ts_f_wt <- topSplice(ex, coef=1, number=Inf)
-ts_s_wt <- topSplice(ex, coef=2, number=Inf)
-ts_f_s <- topSplice(ex, coef=3, number=Inf)
-write.table(ts_f_wt, file="dtu/topSplice_fresia-wt.txt", sep="\t")
-write.table(ts_s_wt, file="dtu/topSplice_smchd1-wt.txt", sep="\t")
-write.table(ts_f_s, file="dtu/topSplice_fresia-smchd1.txt", sep="\t")
+ts <- topSplice(ex,  number=Inf)
 ```
 
-gene level test
-```{r}
-tsg_f_wt <- topSplice(ex, coef=1, number=Inf, test="F")
-tsg_s_wt <- topSplice(ex, coef=2, number=Inf, test="F")
-tsg_f_s <- topSplice(ex, coef=3, number=Inf, test="F")
-write.table(tsg_f_wt, file="dtu/topSplice_G_fresia-wt.txt", sep="\t")
-write.table(tsg_s_wt, file="dtu/topSplice_G_smchd1-wt.txt", sep="\t")
-write.table(tsg_f_s, file="dtu/topSplice_G_fresia-smchd1.txt", sep="\t")
-```
-
-### number of significant genes
+Also only Pisd is significant.
 
 ```{r}
-nSigGene <- rbind(nSigGene, c(
-  "diffSplice", "fresiaVSwt",
-  nrow(tsg_f_wt[tsg_f_wt$FDR<0.05,])
-), c(
-  "diffSplice", "smchd1VSwt",
-  nrow(tsg_s_wt[tsg_s_wt$FDR<0.05,])
-), c(
-  "diffSplice", "fresiaVSsmchd1",
-  nrow(tsg_f_s[tsg_f_s$FDR<0.05,])
-))
-
-nSigGene$n <- as.numeric(nSigGene$n)
-```
-
-
-```{r}
-res_merge_1 <- merge(sres1, tsg_f_wt, by = "GeneID", suffixes = c(".short", ".long"))
-# head(res_merge_1)
-res_merge_2 <- merge(sres2, tsg_s_wt, by = "GeneID", suffixes = c(".short", ".long"))
-res_merge_3 <- merge(sres3, tsg_f_s, by = "GeneID", suffixes = c(".short", ".long"))
-```
-
-```{r}
-library(tidyverse)
-
-res_sig1 <- res_merge_1 %>% filter(P.Value.short <= 0.05) %>% filter(P.Value.long <= 0.05)
-res_sig1
-
-res_sig2 <- res_merge_2 %>% filter(P.Value.short <= 0.05) %>% filter(P.Value.long <= 0.05)
-res_sig2
-
-res_sig3 <- res_merge_3 %>% filter(P.Value.short <= 0.05) %>% filter(P.Value.long <= 0.05)
-res_sig3
-```
-
-## Bar plot of differencial genes found by each method
-
-```{r}
-library(ggplot2)
-ggplot(nSigGene, aes(x=contrast, y=n, fill=method)) + 
-  geom_bar(stat="identity", position=position_dodge())
+plotSplice(ex, geneid = "Pisd", genecolname="SYMBOL", FDR = 0.25)
 ```
 
