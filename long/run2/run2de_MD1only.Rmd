@@ -102,8 +102,28 @@ genes <- select(Mus.musculus, keys=geneid,
                 keytype="ENTREZID")
 genes <- genes[!duplicated(genes$ENTREZID),]
 head(genes)
+# Add gene length information, from fc
+genes$length <- fc$annotation$Length[match(genes$ENTREZID, fc$annotation$GeneID)]
+loglength = log(genes$length)
 x$genes <- genes
 ```
+
+QC: gene length VS expression (CPM)
+
+```{r}
+
+pdf("plots/lengthcpm.pdf", height = 4, width = 8)
+par(mfrow=c(2,4))
+for (i in 1:7) {
+  smoothScatter(loglength, lcpm[,i], 
+              xlab = "log gene length", ylab = "log CPM",
+              main = paste0("Sample ", i, ", cor=", round(cor(loglength, lcpm[,i]), 3)))
+}
+dev.off()
+```
+
+
+
 
 ### Design and contrast
 
