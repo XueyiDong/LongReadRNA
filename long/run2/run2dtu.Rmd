@@ -47,6 +47,43 @@ head(genes)
 
 ```
 
+generate gene level count for comparison
+```{r}
+countsEntrez <- counts
+countsEntrez$gene_id <- genes$ENTREZID[match(geneid, genes$ENSEMBL)]
+geneCount <- aggregate(countsEntrez[,c(-1,-2)], by=list(countsEntrez$gene_id), FUN=sum)
+geneCount <- geneCount[,c(TRUE, sel)]
+rownames(geneCount) <- geneCount[,1]
+geneCount <- geneCount[,-1]
+load("countsPrimary.RData")
+fcCount <- fc$counts
+colnames(fcCount) <- c(paste0("BC0", 7:9), paste0("BC", 10:18))
+samplenames = paste("sample", c(5, 1, 6, 3, 7, 4, 2))
+
+
+plotGeneCor <- function(i, g=geneCount, f=fcCount){
+  m.gene = match(rownames(g), rownames(f))
+  m.sample = match(colnames(g)[i], colnames(f))
+  cpmf = cpm(f, log=TRUE)
+  cpmg = cpm(g, log=TRUE)
+  corr = cor(cpmg[,i], cpmf[m.gene, m.sample], use = "complete.obs")
+  smoothScatter(cpmg[,i], cpmf[m.gene, m.sample],
+                 xlab = "log CPM of gathered gene count",
+                 ylab = "log CPM of direct gene count",
+                 main = paste0(samplenames[i], ", cor=", round(corr, 3)))
+  
+}
+
+pdf("plots/countComp.pdf", height = 4, width = 8)
+par(mfrow=c(2,4))
+for(i in 1:7){
+  plotGeneCor(i)
+  abline(coef=c(0,1), col="red")
+}
+dev.off()
+
+```
+
 
 ```{r dmDSdata}
 d <- dmDSdata(counts = cbind(counts[,c(1,2)], counts[,3:ncol(counts)][,sel]), samples = samples[sel,])
