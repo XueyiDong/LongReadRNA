@@ -210,24 +210,19 @@ head(drim.padj)
 write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
 ```
 
-Only gene Pisd is significant.
-
-# Use Gviz to plot transcripts of DTU genes
+Only gene Pisd is significant. Let's plot proportions for Pisd.
 
 ```{r}
-library(Gviz)
-library(GenomicFeatures)
-gff <- "../scFLT/run1/isoform_annotated.gff3"
-anno <- makeTxDbFromGFF(gff, organism = "Mus musculus")
-tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5", 
-                           start = 32736314, end = 32785626)
-gtrack <- GenomeAxisTrack()
-pdf("plots/genePisd.pdf", height = 4)
-plotTracks(list(gtrack, tr_Pisd), transcriptAnnotation="symbol")
+pdf("plots/DTUPropPisd.pdf", height = 6, width =9)
+
+plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
+                plot_type = "ribbonplot", group_colors = col[1:2]) + 
+  ggtitle("Pisd") +
+  theme(legend.text=element_text(size=5))
+  
+
 dev.off()
 ```
-
-
 
 ## use diffSplice
 
@@ -297,3 +292,25 @@ Also only Pisd is significant.
 plotSplice(ex, geneid = "Pisd", genecolname="SYMBOL", FDR = 0.25)
 ```
 
+# Use Gviz to plot transcripts of DTU genes
+
+```{r}
+library(Gviz)
+library(GenomicFeatures)
+# library(biomaRt)
+gff <- "../scFLT/run1/isoform_annotated.gff3"
+anno <- makeTxDbFromGFF(gff, organism = "Mus musculus")
+# mmusculusEnsembl <- makeTxDbFromBiomart(dataset="mmusculus_gene_ensembl")
+tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5", 
+                           start = 32736314, end = 32785626)
+ensembl <- biomaRt::useMart("ensembl")
+datasets <- biomaRt::listDatasets(ensembl)
+ensembl <- biomaRt::useDataset("mmusculus_gene_ensembl", mart=ensembl)
+biomTrack <- BiomartGeneRegionTrack(genome = "mm10", biomart = ensembl,  
+                                    name = "ENSEMBL", symbol = "Pisd",
+                                    filters=list(ensembl_transcript_id="ENSMUST00000201980")) 
+gtrack <- GenomeAxisTrack()
+pdf("plots/genePisd.pdf", width = 10, height = 5)
+plotTracks(list(gtrack, tr_Pisd, biomTrack), transcriptAnnotation="transcript", lwd = 1, lwd.grid = 1)
+dev.off()
+``` 

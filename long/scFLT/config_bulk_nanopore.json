@@ -27,7 +27,7 @@
         "no_flank":false
     },
     "realign_parameters":{
-        "use_annotation":true
+        "use_annotation":false
     },
     "transcript_counting":{
         "min_tr_coverage":0.3,

@@ -40,20 +40,20 @@ cutoff <- quantile(qcdata$`Length of Read`, 0.99)
 cutoff
 ```
 
-length vs quality
+length vs quality (file too big, abandon)
 
 ```{r}
-pdf("lengthquality.pdf")
-ggplot(qcdata, aes(x = `Length of Read`, y = Quality)) +
-  geom_point() +
-  xlim(NA, cutoff)
-dev.off()
+# pdf("lengthquality.pdf", )
+# ggplot(qcdata, aes(x = `Length of Read`, y = Quality)) +
+#   geom_point() +
+#   xlim(NA, cutoff)
+# dev.off()
 ```
 
 length vs pass/fail
 
 ```{r}
-pdf("lengthpassfail.pdf")
+pdf("lengthpassfail.pdf", height = 4, width = 8)
 qcdata$pass <- qcdata$Quality > 7
 ggplot(qcdata, aes(x = `Length of Read`, fill = pass)) +
   geom_density(alpha = 0.4) +
@@ -76,7 +76,7 @@ qcdata$length <- "medium"
 qcdata$length[qcdata$`Length of Read` < quantile(qcdata$`Length of Read`, 1/3)] <- "short"
 qcdata$length[qcdata$`Length of Read` > quantile(qcdata$`Length of Read`, 2/3)] <- "long"
 qcdata$length[qcdata$`Length of Read` > quantile(qcdata$`Length of Read`, 0.95)] <- "extra long"
-pdf("lengthqualityviolin.pdf")
+pdf("lengthqualityviolin.pdf", height = 4, width = 8)
 ggplot(qcdata, aes(x = length, y = Quality, fill = length, colour = length)) +
   geom_violin(alpha = 0.4) +
   theme_bw()

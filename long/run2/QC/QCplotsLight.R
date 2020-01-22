@@ -1,10 +1,14 @@
 library(ggplot2)
 readnum <- data.frame(
-  number = c(41653950, 28539637, 25074894, 16511740, 39511237, 27493223, 24919069, 16541194),
-  run = c(rep("1", 4), rep("2", 4)),
-  category = factor(c(rep(c("raw", "demultiplexed", "mapped", "assigned"))), levels= c("raw", "demultiplexed", "mapped", "assigned"))
+  number = c(19489349, 17668058, 13854515, 22164601, 6825392, 2657225, 18833786, 17433027, 13854516, 20677451, 5986242, 2686678),
+  run = c(rep("run 1", 6), rep("run 2", 6)),
+  quality = rep(rep(c("Pass", "Fail"), c(3, 3)), 2),
+  category = factor(c(rep(c("raw", "demultiplexed",  "assigned"), 4)), levels= c("raw", "demultiplexed",  "assigned"))
 )
-pdf("totalreadnum.pdf", height = 5)
-ggplot(readnum, aes(x=category, y=number, fill=run)) +
-  geom_bar(stat = "identity")
+pdf("totalreadnum.pdf", height = 4, width = 8)
+ggplot(readnum, aes(x=category, y=number, fill=quality)) +
+  geom_bar(stat = "identity") +
+  facet_grid(.~run) +
+  theme_bw() +
+  geom_text(aes(label=number), position = position_stack(vjust = 0.5), size = 3)
 dev.off()
