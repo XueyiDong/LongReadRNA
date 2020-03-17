@@ -4,7 +4,7 @@
         "do_genome_alignment":false,
         "do_isoform_identification":false,
         "do_read_realignment":true,
-        "do_transcript_quantification":true
+        "do_transcript_quantification":false
     },
     "global_parameters":{
         "generate_raw_isoform":false,
@@ -27,7 +27,7 @@
         "no_flank":false
     },
     "realign_parameters":{
-        "use_annotation":false
+        "use_annotation":true
     },
     "transcript_counting":{
         "min_tr_coverage":0.3,

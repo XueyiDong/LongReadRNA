@@ -213,10 +213,13 @@ write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
 Only gene Pisd is significant. Let's plot proportions for Pisd.
 
 ```{r}
+source("dm_plotProportions.R")
+
 pdf("plots/DTUPropPisd.pdf", height = 6, width =9)
 
 plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
-                plot_type = "ribbonplot", group_colors = col[1:2]) + 
+                plot_type = "ribbonplot", group_colors = col[1:2],
+                order_features = FALSE) + 
   ggtitle("Pisd") +
   theme(legend.text=element_text(size=5))
   
@@ -282,7 +285,7 @@ differential exon retention
 geneid <- counts(d)$gene_id
 featureid <- counts(d)$feature_id
 
-ex <- diffSplice(fit, geneid = geneid, exonid=featureid)
+ex <- diffSplice(efit, geneid = geneid, exonid=featureid)
 ts <- topSplice(ex,  number=Inf)
 ```
 
@@ -292,25 +295,46 @@ Also only Pisd is significant.
 plotSplice(ex, geneid = "Pisd", genecolname="SYMBOL", FDR = 0.25)
 ```
 
+Combine with results from Kelan's diffSplice results
+
+```{r}
+ts.short <- read.table("/wehisan/general/academic/seq_data/kelan/AGRF_CAGRF6583/diffSplice_WtvsSmchd1_allgenes_XD.txt", stringsAsFactors = FALSE, sep = "\t", header=TRUE)
+
+calcTopN <- function(tl, ts, n){
+  num <- sapply(1:n, function(x){
+    length(intersect(tl[1:x, "ENTREZID"], ts[1:x, "EntrezID"]))
+  }, simplify = TRUE)
+  intTopN <- data.frame(
+    number = 1:n,
+    intersect = num
+  )
+  return(intTopN)
+}
+
+top200 <- calcTopN(ts, ts.short, 200)
+```
+
+
+
 # Use Gviz to plot transcripts of DTU genes
 
 ```{r}
 library(Gviz)
 library(GenomicFeatures)
 # library(biomaRt)
-gff <- "../scFLT/run1/isoform_annotated.gff3"
+# gff <- "../scFLT/run1/isoform_annotated.gff3"
+gff <- "../scFLT/run1/pisd.gff3"
 anno <- makeTxDbFromGFF(gff, organism = "Mus musculus")
-# mmusculusEnsembl <- makeTxDbFromBiomart(dataset="mmusculus_gene_ensembl")
-tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5", 
-                           start = 32736314, end = 32785626)
-ensembl <- biomaRt::useMart("ensembl")
-datasets <- biomaRt::listDatasets(ensembl)
-ensembl <- biomaRt::useDataset("mmusculus_gene_ensembl", mart=ensembl)
-biomTrack <- BiomartGeneRegionTrack(genome = "mm10", biomart = ensembl,  
-                                    name = "ENSEMBL", symbol = "Pisd",
-                                    filters=list(ensembl_transcript_id="ENSMUST00000201980")) 
+
+tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5")
+# ensembl <- biomaRt::useMart("ensembl")
+# datasets <- biomaRt::listDatasets(ensembl)
+# ensembl <- biomaRt::useDataset("mmusculus_gene_ensembl", mart=ensembl)
+# biomTrack <- BiomartGeneRegionTrack(genome = "mm10", biomart = ensembl,  
+#                                     name = "ENSEMBL", symbol = "Pisd",
+#                                     filters=list(ensembl_transcript_id="ENSMUST00000201980")) 
 gtrack <- GenomeAxisTrack()
 pdf("plots/genePisd.pdf", width = 10, height = 5)
-plotTracks(list(gtrack, tr_Pisd, biomTrack), transcriptAnnotation="transcript", lwd = 1, lwd.grid = 1)
+plotTracks(list(gtrack, tr_Pisd), transcriptAnnotation="transcript", lwd = 1, lwd.grid = 1)
 dev.off()
 ``` 
