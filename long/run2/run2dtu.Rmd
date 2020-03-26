@@ -271,7 +271,7 @@ y$genes <- genes
 v <- voom(y, design, plot=T)
 fit <- lmFit(v,design)
 efit <- eBayes(fit)
-dt <- decideTests(efit)
+dt <- decideTests(efit, p.value = 0.25)
 summary(dt)
 ```
 
