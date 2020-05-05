@@ -6,7 +6,7 @@
 #PBS -m abe
 #PBS -j oe
 
-TALON_WF=/stornext/General/data/user_managed/grpu_mritchie_1/HasaruK/talon_workflow
+# TALON_WF=/stornext/General/data/user_managed/grpu_mritchie_1/HasaruK/talon_workflow
 SEQUINS_DIR=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin
 DATA_DIR=$SEQUINS_DIR/20200228_YPRDP_2xsequin_mixAB/fastq_pass/merged
 OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
@@ -44,25 +44,50 @@ OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
 # module unload python
 cd /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
 
-module load python/3.7.0
+module load anaconda3
+source activate
+conda activate TALON
 
 
 # initialize the database
-python $TALON_WF/TALON/initialize_talon_database.py --f $SEQUINS_DIR/annotations/rnasequin_annotation_2.4.gtf --g sequins2.4 --a 2.4 --o sequins_talon
+talon_initialize_database --f $SEQUINS_DIR/annotations/rnasequin_annotation_2.4.gtf --g sequins2.4 --a 2.4 --o sequins_talon
+
+# # internal priming check
+# talon_label_reads --f sam/barcode01_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode01_clean
+# talon_label_reads --f sam/barcode02_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode02_clean
+# talon_label_reads --f sam/barcode03_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode03_clean
+# talon_label_reads --f sam/barcode04_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode04_clean
 
 # create config file
-echo "barcode01,mixA,ONT,barcode01_clean.sam
-barcode02,mixA,ONT,barcode02_clean.sam
-barcode03,mixB,ONT,barcode03_clean.sam
-barcode04,mixB,ONT,barcode04_clean.sam" > sequins_config.csv
+echo "barcode01,mixA,ONT,labeled/barcode01_clean_labeled.sam
+barcode02,mixA,ONT,labeled/barcode02_clean_labeled.sam
+barcode03,mixB,ONT,labeled/barcode03_clean_labeled.sam
+barcode04,mixB,ONT,labeled/barcode04_clean_labeled.sam" > sequins_config.csv
 
 # run talon
-python $TALON_WF/TALON/talon.py --f=sequins_config.csv --db=sequins_talon.db --build=sequins2.4 --o=sequins_talon
+talon --f sequins_config.csv --db sequins_talon.db --build sequins2.4 --o sequins_talon
 
-# create abundance file from database
-python $TALON_WF/TALON/post-TALON_tools/create_abundance_file_from_database.py --annot=2.4 --db=sequins_talon.db --build=sequins2.4 --o=sequins_talon
+# summarize how many of each transcript were found
+talon_summarize --db sequins_talon.db --o sequins_talon
+
+# filter transcripts
+talon_filter_transcripts \
+       --db sequins_talon.db \
+       -a 2.4 \
+       --maxFracA 0.5 \
+       --minCount 5 \
+       --o filtered_transcripts.csv
+
+# create abundance file using whitelist
+talon_abundance \
+       --db sequins_talon.db \
+       --whitelist filtered_transcripts.csv \
+       -a 2.4 \
+       --build sequins2.4 \
+       --o sequins_talon
+
 
 # create GTF file from database
-python $TALON_WF/TALON/post-TALON_tools/create_GTF_from_database.py --db=sequins_talon.db --annot=2.4 --build=sequins2.4 --o=sequins_talon
+talon_create_GTF --db sequins_talon.db --annot 2.4 --whitelist filtered_transcripts.csv --build sequins2.4 --o sequins_talon
 
 
