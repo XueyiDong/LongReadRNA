@@ -12,3 +12,13 @@ ggplot(readnum, aes(x=category, y=number, fill=quality)) +
   theme_bw() +
   geom_text(aes(label=number), position = position_stack(vjust = 0.5), size = 3)
 dev.off()
+
+readnum.ag <- aggregate(x=readnum$number, by=list(readnum$quality, readnum$category), FUN=sum)
+colnames(readnum.ag) <- c("quality", "category", "number")
+pdf("totalreadnum_combinedBatch.pdf", height = 4, width = 8)
+ggplot(readnum.ag, aes(x=category, y=number, fill=quality)) +
+  geom_bar(stat = "identity") +
+  # facet_grid(.~run) +
+  theme_bw() +
+  geom_text(aes(label=number), position = position_stack(vjust = 0.5), size = 3)
+dev.off()
