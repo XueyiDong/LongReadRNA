@@ -13,4 +13,4 @@ module load anaconda3
 
 UNIXHOME=/wehisan/home/allstaff/d/dong.x
 
-$UNIXHOME/Programs/gffcompare -r /stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/annotations/rnasequin_annotation_2.4.gtf -R -o /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon/compare/talon /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon/results/sequins_talon_talon.gtf
+$UNIXHOME/Programs/gffcompare -r /stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/annotations/rnasequin_annotation_2.4.gtf -R -o /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon/compare/talon /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon/sequins_talon_talon.gtf
