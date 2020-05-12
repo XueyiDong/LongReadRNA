@@ -100,6 +100,11 @@ ggplot(tt, aes(x = LENGTH, y = AveExpr)) +
 dev.off()
 ```
 
+```{r}
+table(prediction=(tt$adj.P.Val<0.05), trueLabel=tt$logFC_expected!=0)
+```
+
+
 
 ```{r}
 #         ==========     _____ _    _ ____  _____  ______          _____  

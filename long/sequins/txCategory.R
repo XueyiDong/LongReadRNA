@@ -32,8 +32,28 @@ stats <- data.frame(
 stats$class <- factor(stats$class, levels=c("not_in_ref", "not_in_results", "in_both"))
 
 library(ggplot2)
+
+pdf("category.pdf", height = 5, width = 8)
 ggplot(stats, aes(x = method, y=number, fill=class)) +
   geom_bar(stat="identity") +
   theme_bw() +
   labs(y = "number of transcript") +
-  scale_fill_manual(values=c("#2A557B","#BB6C8B","#474A52"))
+  scale_fill_manual(values=c("#5B5C63","#3A668C","#C8819D"))
+dev.off()
+
+# plot FLTSA isoform classification by SQANTI
+isoClass.fltsa <- read.delim("./SQANTI/isoform_annotated_classification.txt", stringsAsFactors = FALSE)
+isoClass.flair <- read.delim("./flair/flair.collapse.rmScBc.isoforms.renamed_classification.txt", stringsAsFactors = FALSE)
+isoClass.talon <- read.delim("./talon/SQANTI/sequins_talon_talon_classification.txt", stringsAsFactors = FALSE)
+isoClass.fltsa$method <- "FLTSA"
+isoClass.flair$method <- "FLAIR"
+isoClass.talon$method <- "TALON"
+isoClass <- rbind(isoClass.fltsa, isoClass.flair, isoClass.talon)
+isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "intergenic", "antisense"))
+
+pdf("isoformClass.pdf", height = 5, width = 8)
+ggplot(isoClass, aes(x = method, fill=structural_category)) + 
+  geom_bar(position = position_stack(reverse = TRUE)) +
+  theme_bw() +
+  geom_hline(yintercept = 164, linetype="dashed")
+dev.off()

@@ -33,7 +33,7 @@ x <- x[, -c(2, 3, 8, 12)]
 
 filter <- filterByExpr(x)
 summary(filter)
-x <- x[filter, keep.lib.sizes=FALSE]
+x <- x[filter, keep.lib.sizes=TRUE]
 x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
 
@@ -71,7 +71,7 @@ x$samples
 x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
 
-pdf("plots/mds_merged.pdf", height = 5, width = 7)
+pdf("plots/mds_merged.pdf", height = 5, width = 8)
 par(xpd=TRUE, mar =c(3.1, 4.1, 4.1, 8.1))
 plotMDS(lcpm, col=col[x$samples$group], labels = 1:7, asp = 1)
 # plot(1,1, type="n", yaxt="n", xaxt="n", ylab="", xlab="", frame.plot=FALSE)
@@ -80,7 +80,7 @@ dev.off()
 ```
 
 ```{r}
-pdf("plots/libsize.pdf", height = 5, width = 8)
+pdf("plots/libsize.pdf", height = 4, width = 8)
 library(ggplot2)
 ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
   geom_bar(stat="identity") +
@@ -137,9 +137,27 @@ cont <- makeContrasts(smchd1-wt, levels=colnames(design))
 ```{r}
 # v <- voomByGroup(x, design=design, plot="all")
 pdf("plots/voom.pdf", height = 4, width = 8)
-v <- voomWithQualityWeights(x, design=design, plot=TRUE, col=col[x$samples$group])
+v <- voomWithQualityWeights(x, design=design, plot=TRUE, col=col[x$samples$group], save.plot=TRUE)
 dev.off()
 ```
+
+Now customize voom plot for publication.
+
+```{r}
+pdf("plots/sampleWeights.pdf", height = 5, width = 8)
+barplot(v$targets$sample.weights, names = 1:length(v$targets$sample.weights),
+        xlab = "Sample", ylab = "Weight", col=col[x$samples$group])
+abline(h = 1, col = 2, lty = 2)
+dev.off()
+
+pdf("plots/voomTrend.pdf", height = 5, width = 8)
+plot(v$voom.xy$x, v$voom.xy$y, xlab = v$voom.xy$xlab, ylab = v$voom.xy$ylab,
+     pch = 16, cex = 0.25)
+lines(v$voom.line, col = "red")
+dev.off()
+```
+
+
 
 ### Fit
 
@@ -183,8 +201,18 @@ dev.off()
 ### MD plot
 
 ```{r MDplot}
-pdf("plots/md.pdf")
-  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "blue"))
+sm <- which(efit$genes$SYMBOL=="Smchd1")
+imprinted <- which(efit$genes$SYMBOL %in% c("Ndn", "Mkrn3", "Peg12"))
+pdf("plots/md.pdf", height = 5, width = 8)
+  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA)
+  # highlight smchd1
+  points(efit$Amean[sm], efit$coefficients[sm, 1], col = "green", pch = 16, cex = 1)
+  points(efit$Amean[imprinted], efit$coefficients[imprinted, 1], col = "orange", pch = 16, cex = 1)
+  legend("topright", legend = c("Imprinted", "Up", "NotSig", "Down", "Smchd1"),
+         col = c("orange","red", "black", "blue", "green"),
+         cex = 0.9, 
+         pch = c(16, 16, 16, 16, 16),
+         pt.cex = c(1, 1, 0.3, 1, 1))
 dev.off()
 ```
 
@@ -279,10 +307,11 @@ Up p-value is getting higher...emmmmm
 Barcode plot
 
 ```{r}
-pdf("plots/barcodeStrict.pdf", height = 4)
+pdf("plots/barcodeStrict.pdf", height = 5, width = 8)
 barcodeplot(efit$t[, 1], index=index.strict,
             gene.weights = gene.weights[index.strict],
-            main=colnames(cont)[1])
+            labels = c("WT", "Smchd1"),
+            xlab = "Moderated t")
 dev.off()
 ```
 
