@@ -55,6 +55,28 @@ plot(data[,6][m], anno[,3], log="xy",
      xlab = "count", ylab="theoretiacl abundance", main="sample 4, mix A")
 ```
 
+```{r}
+cpm <- cpm(data[3:6])
+
+annoData <- cbind(anno, cpm[m,])
+colnames(annoData)[5:8] <- paste0("barcode0", c(3, 4, 1, 2))
+annoData <- melt(annoData, id.vars = 1:4)
+annoData$exp <-annoData$MIX_A
+annoData$exp[annoData$variable %in% c("barcode03", "barcode04")] <- annoData$MIX_B[annoData$variable %in% c("barcode03", "barcode04")]
+colnames(annoData)[5] <- "sample"
+
+
+library(ggplot2)
+pdf("countsVsAnno.pdf", height = 5, width = 8)
+ggplot(annoData, aes(x=exp, y=value, colour=sample)) +
+  geom_point() +
+  theme_bw() +
+  scale_x_continuous(trans = "log10") +
+  scale_y_continuous(trans = "log10") +
+  labs(x = "Expected abundance", y = "CPM")
+dev.off()
+```
+
 
 OK. Now prepare for DRIMSeq.
 
@@ -142,11 +164,11 @@ tx2gene <- res.txp[,c("feature_id", "gene_id")]
 stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
 pScreenAdjusted = FALSE, tx2gene = tx2gene)
 stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
-alpha = 1)
+alpha = 0.05)
 
 suppressWarnings({
   drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
-                                  onlySignificantGenes=TRUE)
+                                  onlySignificantGenes=FALSE)
 })
 head(drim.padj)
 # write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
@@ -223,18 +245,38 @@ proportion$isChanges[abs(proportion$FC-1) > 0.001] <- TRUE
 check DRIMSeq results
 
 ```{r}
+# drimseq feature level
 res.tx <- results(d, level = "feature")
 res.tx$isChanges <- proportion$isChanges[match(res.tx$feature_id, proportion$txID)]
-ggplot(na.omit(res.tx)) +
-  geom_boxplot(aes(x=isChanges, y=adj_pvalue)) +
-  theme_bw() +
-  ggtitle("DRIMSeq transcript-level FDR") +
-  labs(x = "isProportionChange")
-ggplot(na.omit(res.tx)) +
-  geom_boxplot(aes(x=isChanges, y=pvalue)) +
-  theme_bw() +
-  ggtitle("DRIMSeq transcript-level p value") +
-  labs(x = "isProportionChange")
+# drimseq gene level
+res.gene <- results(d, level = "gene")
+res.gene$isChanges <- proportion$isChanges[match(res.gene$gene_id, proportion$geneID)]
+# set stager transcript level NA to 1
+drim.padj$transcript[is.na(drim.padj$transcript)] <- 1
+drim.padj$isChanges <- proportion$isChanges[match(drim.padj$txID, proportion$txID)]
+a <- match(unique(drim.padj$geneID), drim.padj$geneID)
+res.all <- data.frame(
+  id = c(res.gene$gene_id, res.tx$feature_id, unique(drim.padj$geneID), drim.padj$txID),
+  adj_pvalue = c(res.gene$adj_pvalue, res.tx$adj_pvalue, drim.padj$gene[a], drim.padj$transcript),
+  isChanges = c(res.gene$isChanges, res.tx$isChanges, drim.padj$isChanges[a], drim.padj$isChanges),
+  method = c(rep("DRIMSeq_gene", nrow(res.gene)), rep("DRIMSeq_feature", nrow(res.tx)), rep("stageR_gene", length(unique(drim.padj$geneID))), rep("stageR_transcript", nrow(drim.padj)))
+)
+
+ggplot(na.omit(res.all), aes(x=isChanges, y=adj_pvalue, fill=method)) +
+  geom_boxplot() +
+  theme_bw()
+
+
+# ggplot(na.omit(res.tx)) +
+#   geom_boxplot(aes(x=isChanges, y=adj_pvalue)) +
+#   theme_bw() +
+#   ggtitle("DRIMSeq transcript-level FDR") +
+#   labs(x = "isProportionChange")
+# ggplot(na.omit(res.tx)) +
+#   geom_boxplot(aes(x=isChanges, y=pvalue)) +
+#   theme_bw() +
+#   ggtitle("DRIMSeq transcript-level p value") +
+#   labs(x = "isProportionChange")
 ```
 
 ```{r}

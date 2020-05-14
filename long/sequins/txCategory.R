@@ -42,12 +42,23 @@ ggplot(stats, aes(x = method, y=number, fill=class)) +
 dev.off()
 
 # plot FLTSA isoform classification by SQANTI
+# read SAANTI class
 isoClass.fltsa <- read.delim("./SQANTI/isoform_annotated_classification.txt", stringsAsFactors = FALSE)
-isoClass.flair <- read.delim("./flair/flair.collapse.rmScBc.isoforms.renamed_classification.txt", stringsAsFactors = FALSE)
+isoClass.flair <- read.delim("./flair/SQANTI/flair.collapse.rmScBc.isoforms_classification.txt", stringsAsFactors = FALSE)
 isoClass.talon <- read.delim("./talon/SQANTI/sequins_talon_talon_classification.txt", stringsAsFactors = FALSE)
 isoClass.fltsa$method <- "FLTSA"
 isoClass.flair$method <- "FLAIR"
 isoClass.talon$method <- "TALON"
+# read count matrix
+count.fltsa <- read.csv("/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/FLTSA_output/transcript_count.csv", stringsAsFactors = FALSE)
+count.talon <- read.delim("./talon/sequins_talon_talon_abundance_filtered.tsv", sep = "\t", stringsAsFactors = FALSE)
+count.talon_unfiltered <- read.delim("./talon/sequins_talon_talon_abundance.tsv", sep = "\t", stringsAsFactors = FALSE)
+count.flair <- read.delim("./flair/counts_matrix.tsv", sep = "\t", stringsAsFactors = FALSE)
+
+isoClass.fltsa$count <- rowSums(count.fltsa[, 3:6])[match(isoClass.fltsa$isoform, paste0("transcript:", count.fltsa$transcript_id))]
+isoClass.flair$count <- rowSums(count.flair[, 2:5])[match(substring(isoClass.flair$isoform, 1, 36), substring(count.flair$ids, 1, 36))]
+isoClass.talon$count <- rowSums(count.talon[, 12:15])[match(isoClass.talon$isoform, count.talon$annot_transcript_id)]
+
 isoClass <- rbind(isoClass.fltsa, isoClass.flair, isoClass.talon)
 isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "intergenic", "antisense"))
 
@@ -55,5 +66,13 @@ pdf("isoformClass.pdf", height = 5, width = 8)
 ggplot(isoClass, aes(x = method, fill=structural_category)) + 
   geom_bar(position = position_stack(reverse = TRUE)) +
   theme_bw() +
-  geom_hline(yintercept = 164, linetype="dashed")
+  geom_hline(yintercept = 164, linetype="dashed") +
+  labs(y = "Number of transcripts")
+dev.off()
+
+pdf("isoformClassCount.pdf", height = 5, width = 8)
+ggplot(isoClass, aes(x=method, y=count, fill=structural_category)) +
+  geom_bar(position = position_stack(reverse = TRUE), stat = "identity") +
+  labs(y = "Read count") +
+  theme_bw()
 dev.off()

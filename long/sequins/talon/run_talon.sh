@@ -52,11 +52,11 @@ conda activate TALON
 # initialize the database
 talon_initialize_database --f $SEQUINS_DIR/annotations/rnasequin_annotation_2.4.gtf --g sequins2.4 --a 2.4 --o sequins_talon
 
-# # internal priming check
-# talon_label_reads --f sam/barcode01_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode01_clean
-# talon_label_reads --f sam/barcode02_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode02_clean
-# talon_label_reads --f sam/barcode03_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode03_clean
-# talon_label_reads --f sam/barcode04_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode04_clean
+# internal priming check
+talon_label_reads --f sam/barcode01_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode01_clean
+talon_label_reads --f sam/barcode02_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode02_clean
+talon_label_reads --f sam/barcode03_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode03_clean
+talon_label_reads --f sam/barcode04_clean.sam --g $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --t 4 --deleteTmp --o labeled/barcode04_clean
 
 # create config file
 echo "barcode01,mixA,ONT,labeled/barcode01_clean_labeled.sam
@@ -69,6 +69,13 @@ talon --f sequins_config.csv --db sequins_talon.db --build sequins2.4 --o sequin
 
 # summarize how many of each transcript were found
 talon_summarize --db sequins_talon.db --o sequins_talon
+
+# create abundance file without filtering
+talon_abundance \
+       --db sequins_talon.db \
+       -a 2.4 \
+       --build sequins2.4 \
+       --o sequins_talon
 
 # filter transcripts
 talon_filter_transcripts \

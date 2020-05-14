@@ -36,12 +36,18 @@ readDF$covFraction <- readDF$width / readDF$tx_len
 # DF$group[DF$sample %in% c("2", "3", "7")] <- "Smchd1"
 
 
-pdf("fullLengthViolinLen.pdf")
+
+
+pdf("fullLengthViolinLen.pdf", height = 5, width = 8)
+give.n <- function(x){
+  return(c(y = 0.98, label = length(x))) 
+}
 # tx length
 ggplot(readDF, aes(x=txLengthGroup, y=covFraction, fill=txLengthGroup)) +
   geom_violin() +
   theme_bw() +
-  ylim(0, 1) 
+  ylim(0, 1) +
+  stat_summary(fun.data = give.n, geom = "text", vjust = -1)
 dev.off()
 
 library(viridis)

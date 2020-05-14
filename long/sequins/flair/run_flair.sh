@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N flair_collapse
 #PBS -q submit
-#PBS -l nodes=1:ppn=8,mem=80gb,walltime=120:00:00
+#PBS -l nodes=1:ppn=4,mem=40gb,walltime=24:00:00
 #PBS -M dong.x@wehi.edu.au
 #PBS -m abe
 #PBS -j oe
@@ -32,6 +32,9 @@ flairdir=/wehisan/home/allstaff/d/dong.x/Programs/flair
 # # quantify
 # python $flairdir/flair.py quantify -r reads_manifest.tsv -i flair.collapse.isoforms.fa -t 8 --temp_dir ./tmp
 
-# collapse again
-reads_rmbc=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/fastq_pass/merged/all.fastq
-python $flairdir/flair.py collapse -g $anno/rnasequin_decoychr_2.4.fa -r $reads_rmbc -q flair_all_corrected.rmScBc.bed -t 8 --temp_dir ./tmp -o flair.collapse.rmScBc
+# # collapse again
+# reads_rmbc=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/fastq_pass/merged/all.fastq
+# python $flairdir/flair.py collapse -g $anno/rnasequin_decoychr_2.4.fa -r $reads_rmbc -q flair_all_corrected.rmScBc.bed -t 8 --temp_dir ./tmp -o flair.collapse.rmScBc
+
+# quantify
+python $flairdir/flair.py quantify -r reads_manifest.tsv -i flair.collapse.rmScBc.isoforms.fa -t 4 --temp_dir ./tmp
