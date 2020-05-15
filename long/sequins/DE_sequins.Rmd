@@ -104,6 +104,16 @@ dev.off()
 table(prediction=(tt$adj.P.Val<0.05), trueLabel=tt$logFC_expected!=0)
 ```
 
+Calculate FDR and TPR
+
+```{r}
+tt$sig <- tt$adj.P.Val<0.05
+tt$DE <- abs(tt$logFC_expected) > 0.0001
+
+FDR = sum(tt$sig &!(tt$DE)) / sum(tt$sig)
+
+TPR = sum(tt$DE & tt$sig) / sum(tt$DE)
+```
 
 
 ```{r}

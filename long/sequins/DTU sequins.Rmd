@@ -309,7 +309,7 @@ ggplot(na.omit(ds.all), aes(x=DTU, y=FDR, fill=test)) +
 ```{r}
 results.all <- rbind(res.all, ds.all)
 
-pdf("plots/DTU_FDR.pdf", height = 5, width = 8)
+pdf("DTU_FDR.pdf", height = 5, width = 8)
 ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
   geom_boxplot(alpha=.6) +
   # facet_grid(.~level) +
@@ -341,9 +341,21 @@ TPR <- sapply(unique(results.all$test), function(x){
   pc = sum(results$DTU)
   return(c(as.character(x), td/pc))
 }, simplify = TRUE)
-TPR
+TPR <- as.data.frame(t(TPR))
+TPR$V2 <- as.numeric(as.character(TPR$V2))
+colnames(TPR) <- c("test", "TPR")
 ```
 
+FDR all 0. now plot TPR
+
+```{r}
+pdf("DTU_TPR.pdf", width = 8, height = 5)
+ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  labs (x = "Test", y = "True positive rate")
+dev.off()
+```
 
 
 ```{r}
