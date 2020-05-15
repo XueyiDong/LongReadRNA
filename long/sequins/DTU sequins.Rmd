@@ -228,6 +228,7 @@ featureid <- counts(d)$feature_id
 ex <- diffSplice(efit, geneid = geneid, exonid=featureid)
 ts <- topSplice(ex,  number=Inf)
 ts.tx <- topSplice(ex, test = "t", number = Inf)
+ts.f <- topSplice(ex, test = "F", number = Inf)
 
 head(ts)
 table(ts$FDR < 0.05)
@@ -251,32 +252,25 @@ res.tx$isChanges <- proportion$isChanges[match(res.tx$feature_id, proportion$txI
 # drimseq gene level
 res.gene <- results(d, level = "gene")
 res.gene$isChanges <- proportion$isChanges[match(res.gene$gene_id, proportion$geneID)]
-# set stager transcript level NA to 1
-drim.padj$transcript[is.na(drim.padj$transcript)] <- 1
+# set stager transcript level NA to 1？ no
+suppressWarnings({
+  drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+})
+# drim.padj$transcript[is.na(drim.padj$transcript)] <- 1
 drim.padj$isChanges <- proportion$isChanges[match(drim.padj$txID, proportion$txID)]
 a <- match(unique(drim.padj$geneID), drim.padj$geneID)
 res.all <- data.frame(
   id = c(res.gene$gene_id, res.tx$feature_id, unique(drim.padj$geneID), drim.padj$txID),
-  adj_pvalue = c(res.gene$adj_pvalue, res.tx$adj_pvalue, drim.padj$gene[a], drim.padj$transcript),
-  isChanges = c(res.gene$isChanges, res.tx$isChanges, drim.padj$isChanges[a], drim.padj$isChanges),
-  method = c(rep("DRIMSeq_gene", nrow(res.gene)), rep("DRIMSeq_feature", nrow(res.tx)), rep("stageR_gene", length(unique(drim.padj$geneID))), rep("stageR_transcript", nrow(drim.padj)))
+  FDR = c(res.gene$adj_pvalue, res.tx$adj_pvalue, drim.padj$gene[a], drim.padj$transcript),
+  DTU = c(res.gene$isChanges, res.tx$isChanges, drim.padj$isChanges[a], drim.padj$isChanges),
+  test = c(rep("DRIMSeq_gene", nrow(res.gene)), rep("DRIMSeq_feature", nrow(res.tx)), rep("stageR_gene", length(unique(drim.padj$geneID))), rep("stageR_transcript", nrow(drim.padj))),
+  level = c(rep("Gene level", nrow(res.gene)), rep("Feature level", nrow(res.tx)), rep("Gene level", length(unique(drim.padj$geneID))), rep("Feature level", nrow(drim.padj)))
 )
 
-ggplot(na.omit(res.all), aes(x=isChanges, y=adj_pvalue, fill=method)) +
+ggplot(na.omit(res.all), aes(x=DTU, y=FDR, fill=test)) +
   geom_boxplot() +
   theme_bw()
-
-
-# ggplot(na.omit(res.tx)) +
-#   geom_boxplot(aes(x=isChanges, y=adj_pvalue)) +
-#   theme_bw() +
-#   ggtitle("DRIMSeq transcript-level FDR") +
-#   labs(x = "isProportionChange")
-# ggplot(na.omit(res.tx)) +
-#   geom_boxplot(aes(x=isChanges, y=pvalue)) +
-#   theme_bw() +
-#   ggtitle("DRIMSeq transcript-level p value") +
-#   labs(x = "isProportionChange")
 ```
 
 ```{r}
@@ -298,7 +292,59 @@ ggplot(na.omit(ts.tx), aes(x=isChanges, y=FDR)) +
   ggtitle("diffSplice transcript-level FDR") +
   labs(x = "isProportionChange")
   
+ds.all <- data.frame(
+  id = c(ts$GeneID, ts.f$GeneID, ts.tx$ExonID),
+  FDR = c(ts$FDR, ts.f$FDR, ts.tx$FDR),
+  DTU = c(proportion$isChanges[match(ts$GeneID, proportion$geneID)], proportion$isChanges[match(ts.f$GeneID, proportion$geneID)],
+               proportion$isChanges[match(ts.tx$ExonID, proportion$txID)]),
+  test = c(rep("diffSplice_simes", nrow(ts)), rep("diffSplice_F", nrow(ts.f)), rep("diffSplice_t", nrow(ts.tx))),
+  level = c(rep("Gene level", nrow(ts)), rep("Gene level", nrow(ts.f)), rep("Feature level", nrow(ts.tx)))
+)
+
+ggplot(na.omit(ds.all), aes(x=DTU, y=FDR, fill=test)) +
+  geom_boxplot() +
+  theme_bw()
 ```
+
+```{r}
+results.all <- rbind(res.all, ds.all)
+
+pdf("plots/DTU_FDR.pdf", height = 5, width = 8)
+ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
+  geom_boxplot(alpha=.6) +
+  # facet_grid(.~level) +
+  theme_bw() +
+  # theme(axis.text.x = element_text(angle = 90)) +
+  geom_hline(yintercept = 0.05, linetype="dashed") +
+  labs(y = "Adjusted p-value")
+dev.off()
+```
+
+Calculate FDR and TPR.
+
+> FDR = number of falsely detected genes / number of detected genes
+TPR = number of correctly detected genes / number of positive control genes
+
+```{r}
+results.all$sig <- results.all$FDR < 0.05
+FDR <- sapply(unique(results.all$test), function(x){
+  results = na.omit(results.all[results.all$test == x, ])
+  fd = sum(results$sig & !(results$DTU))
+  dt = sum(results$sig)
+  return(c(as.character(x), fd/dt))
+}, simplify = TRUE)
+FDR
+
+TPR <- sapply(unique(results.all$test), function(x){
+  results = na.omit(results.all[results.all$test == x, ])
+  td = sum(results$sig & results$DTU)
+  pc = sum(results$DTU)
+  return(c(as.character(x), td/pc))
+}, simplify = TRUE)
+TPR
+```
+
+
 
 ```{r}
 ts.tx$logFC <- log(proportion$FC[match(ts.tx$ExonID, proportion$txID)])
