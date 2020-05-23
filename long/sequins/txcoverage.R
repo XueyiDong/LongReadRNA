@@ -36,8 +36,6 @@ readDF$covFraction <- readDF$width / readDF$tx_len
 # DF$group[DF$sample %in% c("2", "3", "7")] <- "Smchd1"
 
 
-
-
 pdf("fullLengthViolinLen.pdf", height = 5, width = 8)
 give.n <- function(x){
   return(c(y = 0.98, label = length(x))) 
@@ -76,3 +74,47 @@ head(covFracLargerThan1)
 dim(covFracLargerThan1)
 length(unique(covFracLargerThan1$read))
 length(unique(covFracLargerThan1$seqnames))
+
+# make alternative plot
+pdf("txLenCovFrac.pdf", height = 5, width = 8)
+ggplot(readDF, aes(x=tx_len, y=covFraction)) +
+  stat_binhex(binwidth = c(0.03, 0.1)) +
+  theme_bw() +
+  labs(x="Transcript length", y="Coverage fraction") +
+  scale_x_continuous(trans = "log10") +
+  scale_fill_viridis(direction = -1, option="A")
+dev.off()
+
+#calculate some stats by transcript
+
+txStat <- sapply(unique(readDF$seqnames), function(x){
+  readDF.sel = readDF[readDF$seqnames==x, ]
+  meanCovFrac = mean(readDF.sel$covFraction)
+  medianCovFraction = median(readDF.sel$covFraction)
+  fl95 = sum(readDF.sel$covFraction >= 0.95) / nrow(readDF.sel)
+  fl90 = sum(readDF.sel$covFraction >= 0.90) / nrow(readDF.sel)
+  c(readDF.sel[1, "tx_len"], meanCovFrac, medianCovFraction, fl95, fl90, nrow(readDF.sel))
+}, simplify = TRUE)
+
+txStat <- as.data.frame(t(txStat))
+colnames(txStat) <- c("tx_len", "mean", "median", "fl95", "fl90", "count")
+txStat$log_count <- log10(txStat$count)
+
+ggplot(txStat, aes(x=tx_len, y=median, size=log_count))+
+  scale_x_continuous(trans = "log10") +
+  geom_point()
+
+ggplot(txStat, aes(x=tx_len, y=mean, size=log_count))+
+  scale_x_continuous(trans = "log10") +
+  geom_point()
+
+ggplot(txStat, aes(x=tx_len, y=fl90, size=log_count))+
+  scale_x_continuous(trans = "log10") +
+  geom_point()
+
+pdf(txLenFL.pdf, height = 5, width = 8)
+ggplot(txStat, aes(x=tx_len, y=fl95, size=log_count))+
+  scale_x_continuous(trans = "log10") +
+  geom_point(alpha = .7) +
+  theme_bw()
+dev.off()

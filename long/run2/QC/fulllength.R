@@ -110,6 +110,9 @@ ggplot(DF, aes(x=sample, y=covFraction, fill=group)) +
   scale_fill_brewer(palette="Set2")
 dev.off()
 
+
+
+
 # look into why some cov fraction > 1
 
 covFracLargerThan1 <- DF[DF$covFraction>1, ]
