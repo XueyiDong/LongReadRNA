@@ -112,9 +112,10 @@ ggplot(txStat, aes(x=tx_len, y=fl90, size=log_count))+
   scale_x_continuous(trans = "log10") +
   geom_point()
 
-pdf(txLenFL.pdf, height = 5, width = 8)
+pdf("txLenFL.pdf", height = 5, width = 8)
 ggplot(txStat, aes(x=tx_len, y=fl95, size=log_count))+
   scale_x_continuous(trans = "log10") +
   geom_point(alpha = .7) +
+  labs(x = "Transcript length", y = "Fraction of full-length") +
   theme_bw()
 dev.off()
