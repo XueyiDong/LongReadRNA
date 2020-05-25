@@ -76,3 +76,12 @@ ggplot(isoClass, aes(x=method, y=count, fill=structural_category)) +
   labs(y = "Read count") +
   theme_bw()
 dev.off()
+
+pdf("IsoformClassLengthFLTSA.pdf", height = 5, width = 8)
+ggplot(isoClass.fltsa, aes(x=structural_category, y=length, fill=structural_category)) +
+  geom_boxplot() +
+  scale_y_continuous(trans = "log10") +
+  theme_bw()
+dev.off()
+
+plot(isoClass$diff_to_TSS, isoClass$diff_to_TTS)

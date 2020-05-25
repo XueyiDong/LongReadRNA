@@ -234,6 +234,41 @@ head(ts)
 table(ts$FDR < 0.05)
 ```
 
+
+Two-stage test for diffSplice
+
+```{r}
+
+library(stageR)
+
+pScreen <- ts$P.Value
+pScreen2 <- ts.f$P.Value
+names(pScreen) <- ts$GeneID
+names(pScreen2) <- ts.f$GeneID
+pConfirmation <- matrix(ts.tx$P.Value, ncol = 1)
+rownames(pConfirmation) <- ts.tx$ExonID
+
+tx2gene <- ts.tx[,1:2]
+
+stageRObj2 <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj2 <- stageWiseAdjustment(object = stageRObj2, method = "dtu",
+alpha = 0.05)
+stageRObj3 <- stageRTx(pScreen = pScreen2, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj3 <- stageWiseAdjustment(object = stageRObj3, method = "dtu",
+alpha = 0.05)
+suppressWarnings({
+  ds.padj <- getAdjustedPValues(stageRObj2, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+  ds.padj.f <- getAdjustedPValues(stageRObj3, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+})
+head(ds.padj)
+head(ds.padj.f)
+
+```
+
 Now deal with anno, find out control genes
 
 ```{r}
@@ -264,7 +299,7 @@ res.all <- data.frame(
   id = c(res.gene$gene_id, res.tx$feature_id, unique(drim.padj$geneID), drim.padj$txID),
   FDR = c(res.gene$adj_pvalue, res.tx$adj_pvalue, drim.padj$gene[a], drim.padj$transcript),
   DTU = c(res.gene$isChanges, res.tx$isChanges, drim.padj$isChanges[a], drim.padj$isChanges),
-  test = c(rep("DRIMSeq_gene", nrow(res.gene)), rep("DRIMSeq_feature", nrow(res.tx)), rep("stageR_gene", length(unique(drim.padj$geneID))), rep("stageR_transcript", nrow(drim.padj))),
+  test = c(rep("DRIMSeq_gene", nrow(res.gene)), rep("DRIMSeq_feature", nrow(res.tx)), rep("DRIMSeq_stageR_gene", length(unique(drim.padj$geneID))), rep("DRIMSeq_stageR_transcript", nrow(drim.padj))),
   level = c(rep("Gene level", nrow(res.gene)), rep("Feature level", nrow(res.tx)), rep("Gene level", length(unique(drim.padj$geneID))), rep("Feature level", nrow(drim.padj)))
 )
 
@@ -292,13 +327,32 @@ ggplot(na.omit(ts.tx), aes(x=isChanges, y=FDR)) +
   ggtitle("diffSplice transcript-level FDR") +
   labs(x = "isProportionChange")
   
+b <- match(unique(ds.padj$geneID), ds.padj$geneID)
+c <- match(unique(ds.padj.f$geneID), ds.padj.f$geneID)
 ds.all <- data.frame(
-  id = c(ts$GeneID, ts.f$GeneID, ts.tx$ExonID),
-  FDR = c(ts$FDR, ts.f$FDR, ts.tx$FDR),
-  DTU = c(proportion$isChanges[match(ts$GeneID, proportion$geneID)], proportion$isChanges[match(ts.f$GeneID, proportion$geneID)],
-               proportion$isChanges[match(ts.tx$ExonID, proportion$txID)]),
-  test = c(rep("diffSplice_simes", nrow(ts)), rep("diffSplice_F", nrow(ts.f)), rep("diffSplice_t", nrow(ts.tx))),
-  level = c(rep("Gene level", nrow(ts)), rep("Gene level", nrow(ts.f)), rep("Feature level", nrow(ts.tx)))
+  id = c(ts$GeneID, ts.f$GeneID, ts.tx$ExonID, 
+         unique(ds.padj$geneID), ds.padj$txID, 
+         unique(ds.padj.f$geneID), ds.padj.f$txID),
+  FDR = c(ts$FDR, ts.f$FDR, ts.tx$FDR, 
+          ds.padj$gene[b], ds.padj$transcript, 
+          ds.padj.f$gene[c], ds.padj.f$transcript),
+  DTU = c(proportion$isChanges[match(ts$GeneID, proportion$geneID)], 
+          proportion$isChanges[match(ts.f$GeneID, proportion$geneID)],
+          proportion$isChanges[match(ts.tx$ExonID, proportion$txID)], 
+          proportion$isChanges[match(ds.padj$geneID, proportion$geneID)][b], 
+          proportion$isChanges[match(ds.padj$txID, proportion$txID)], 
+          proportion$isChanges[match(ds.padj.f$geneID, proportion$geneID)][c], 
+          proportion$isChanges[match(ds.padj.f$txID, proportion$txID)]),
+  test = c(rep("diffSplice_simes", nrow(ts)), rep("diffSplice_F", nrow(ts.f)), rep("diffSplice_t", nrow(ts.tx)),
+           rep("diffSplice_simes_stageR_gene", length(unique(ds.padj$geneID))),
+           rep("diffSplice_simes_stageR_transcript", nrow(ds.padj)),
+           rep("diffSplice_F_stageR_gene", length(unique(ds.padj.f$geneID))),
+           rep("diffSplice_F_stageR_transcript", nrow(ds.padj.f))),
+  level = c(rep("Gene level", nrow(ts)), rep("Gene level", nrow(ts.f)), rep("Feature level", nrow(ts.tx)),
+            rep("Gene level", length(unique(ds.padj$geneID))),
+            rep("Feature level", nrow(ds.padj)),
+            rep("Gene level", length(unique(ds.padj.f$geneID))),
+            rep("Feature level", nrow(ds.padj.f)))
 )
 
 ggplot(na.omit(ds.all), aes(x=DTU, y=FDR, fill=test)) +
@@ -353,7 +407,8 @@ pdf("DTU_TPR.pdf", width = 8, height = 5)
 ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +
-  labs (x = "Test", y = "True positive rate")
+  labs (x = "Test", y = "True positive rate") +
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1))
 dev.off()
 ```
 

@@ -48,6 +48,18 @@ ggplot(readDF, aes(x=txLengthGroup, y=covFraction, fill=txLengthGroup)) +
   stat_summary(fun.data = give.n, geom = "text", vjust = -1)
 dev.off()
 
+pdf("fullLengthBoxLen.pdf", height = 5, width = 8)
+give.n <- function(x){
+  return(c(y = 0.98, label = length(x))) 
+}
+# tx length
+ggplot(readDF, aes(x=txLengthGroup, y=covFraction, fill=txLengthGroup)) +
+  geom_boxplot() +
+  theme_bw() +
+  ylim(0, 1) +
+  stat_summary(fun.data = give.n, geom = "text", vjust = -1)
+dev.off()
+
 library(viridis)
 pdf("mappedVsTxLen.pdf")
 smoothScatter(readDF$tx_len, readDF$width, 
@@ -119,3 +131,34 @@ ggplot(txStat, aes(x=tx_len, y=fl95, size=log_count))+
   labs(x = "Transcript length", y = "Fraction of full-length") +
   theme_bw()
 dev.off()
+
+
+readDF$alignedFraction <- readDF$alignedLength / readDF$readLength
+
+pdf("alignCov.pdf")
+ggplot(readDF, aes(x=alignedFraction, y=covFraction)) +
+  stat_binhex()+
+  scale_fill_viridis(direction = -1, option="A")
+dev.off()
+
+smoothScatter(readDF$alignedFraction, readDF$covFraction)
+cor(readDF$alignedFraction, readDF$tx_len)
+#-0.01392428 almost no corr between tx len and aligned fraction
+
+cor(readDF$tx_len, readDF$covFraction)
+# -0.5247596
+
+cor(readDF$alignedFraction, readDF$covFraction)
+# 0.6427299
+
+
+smoothScatter(readDF$tx_len, readDF$covFraction, log="x")
+
+readDF$isFullLength <- readDF$covFraction >= 0.95
+
+pdf("AlignFL.pdf", height = 5, width = 8)
+ggplot(readDF, aes(x=isFullLength, y=alignedFraction, fill=isFullLength)) +
+  geom_violin() +
+  theme_bw()
+dev.off()
+
