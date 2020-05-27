@@ -21,3 +21,5 @@ ggplot(isoClass[!is.na(isoClass$count),], aes(x=structural_category, y=count, fi
   theme_bw() +
   theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1))
 dev.off()
+
+classCount <- aggregate(isoClass$count[!is.na(isoClass$count)], by=list(structural_category=isoClass$structural_category[!is.na(isoClass$count)]), FUN=sum)
