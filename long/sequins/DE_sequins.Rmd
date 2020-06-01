@@ -80,10 +80,15 @@ anno$logFC <- log(anno$MIX_B / anno$MIX_A)
 tt$logFC_expected <- anno$logFC[match(rownames(tt), anno$NAME)]
 tt$LENGTH <- anno$LENGTH[match(rownames(tt), anno$NAME)]
 cor(tt$logFC, tt$logFC_expected)
+
 pdf("logfc.pdf", height = 5, width = 8)
 ggplot(tt, aes(x = logFC_expected, y = logFC)) +
   geom_point(aes(colour=LENGTH)) +
-  theme_bw()
+  theme_bw() +
+  theme(text = element_text(size = 20), 
+        legend.text = element_text(size=16)) +
+  labs(colour="Length") +
+  scale_colour_gradient(name = "Length", trans = "log", breaks= c(250, 500, 1000, 2000, 4000, 8000))
 dev.off()
 
 ```
@@ -185,5 +190,32 @@ TPR = sum(tt$DE & tt$sig) / sum(tt$DE)
 # ||                                                                            ||
 # ||                                                                            ||
 # \\============================================================================//
+```
+
+```{r}
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,1]
+), file = "geo/sequinsMixA1.tsv",
+sep = "\t", row.names = FALSE)
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,2]
+), file = "geo/sequinsMixA2.tsv",
+sep = "\t", row.names = FALSE)
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,3]
+), file = "geo/sequinsMixB1.tsv",
+sep = "\t", row.names = FALSE)
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,4]
+), file = "geo/sequinsMixB2.tsv",
+sep = "\t", row.names = FALSE)
 ```
 

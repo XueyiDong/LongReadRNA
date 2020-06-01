@@ -20,5 +20,8 @@ ggplot(readnum.ag, aes(x=category, y=number, fill=quality)) +
   geom_bar(stat = "identity") +
   # facet_grid(.~run) +
   theme_bw() +
-  geom_text(aes(label=number), position = position_stack(vjust = 0.5), size = 3)
+  geom_text(aes(label=number), position = position_stack(vjust = 0.5), size = 5) +
+  theme(legend.position = c(0.9, 0.8), 
+        text = element_text(size=20)) +
+  labs(x = "", y = "Number of reads")
 dev.off()

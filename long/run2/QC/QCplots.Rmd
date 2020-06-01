@@ -79,7 +79,8 @@ qcdata$length[qcdata$`Length of Read` > quantile(qcdata$`Length of Read`, 0.95)]
 pdf("lengthqualityviolin.pdf", height = 4, width = 8)
 ggplot(qcdata, aes(x = length, y = Quality, fill = length, colour = length)) +
   geom_violin(alpha = 0.4) +
-  theme_bw()
+  theme_bw() +
+  theme(text = element_text(size=20))
 dev.off()
 ```
 

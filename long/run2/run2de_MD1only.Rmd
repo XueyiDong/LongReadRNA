@@ -86,7 +86,8 @@ ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
   geom_bar(stat="identity") +
   scale_fill_brewer(palette = "Set2") +
   scale_x_discrete(limits = x$samples$sample, labels=1:7) +
-  theme_bw()
+  theme_bw() +
+  theme(text = element_text(size=20))
 dev.off()
 ```
 
@@ -193,7 +194,8 @@ ggplot(tt, aes(x=length, y=AveExpr)) +
   theme_bw() +
   labs(y = "average expression") +
   scale_x_continuous(trans = "log10") +
-  scale_fill_viridis(direction = -1, option="A")
+  scale_fill_viridis(direction = -1, option="A") +
+  theme(text=element_text(size = 20), legend.position = c(0.92, 0.6))
 dev.off()
 
 cor(tt$length, tt$AveExpr)
