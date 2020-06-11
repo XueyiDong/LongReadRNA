@@ -72,22 +72,27 @@ x <- calcNormFactors(x)
 lcpm <- cpm(x, log=TRUE)
 
 pdf("plots/mds_merged.pdf", height = 5, width = 8)
-par(xpd=TRUE, mar =c(4.1, 4.1, 2.1, 8.1))
-plotMDS(lcpm, col=col[x$samples$group], labels = 1:7, asp = 1)
+# par(xpd=TRUE, mar =c(4.1, 4.1, 2.1, 8.1))
+plotMDS(lcpm, col=col[x$samples$group], labels = 1:7, asp = 1,
+        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5)
 # plot(1,1, type="n", yaxt="n", xaxt="n", ylab="", xlab="", frame.plot=FALSE)
-legend("topright",inset=c(-0.26,0), c("Smchd1-null", "wt"), text.col = col[c(1,2)])
+legend("bottomright", c("Smchd1-null", "wt"), text.col = col[c(1,2)], cex = 1.25)
 dev.off()
 ```
 
 ```{r}
+x$samples$groups <- x$samples$group
+x$samples$groups <- gsub("smchd1", "Smchd1-null", x$samples$groups)
+x$samples$groups <- gsub("wt", "WT", x$samples$groups)
 pdf("plots/libsize.pdf", height = 4, width = 8)
 library(ggplot2)
-ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
+ggplot(x$samples, aes(x=sample, y=lib.size, fill=groups)) +
   geom_bar(stat="identity") +
   scale_fill_brewer(palette = "Set2") +
   scale_x_discrete(limits = x$samples$sample, labels=1:7) +
   theme_bw() +
-  theme(text = element_text(size=20))
+  theme(text = element_text(size=20)) +
+  labs(y = "Library size", x = "Sample") 
 dev.off()
 ```
 
@@ -147,13 +152,15 @@ Now customize voom plot for publication.
 ```{r}
 pdf("plots/sampleWeights.pdf", height = 5, width = 8)
 barplot(v$targets$sample.weights, names = 1:length(v$targets$sample.weights),
-        xlab = "Sample", ylab = "Weight", col=col[x$samples$group])
+        xlab = "Sample", ylab = "Weight", col=col[x$samples$group],
+        cex.lab = 1.5, cex.axis = 1.5)
 abline(h = 1, col = 2, lty = 2)
 dev.off()
 
 pdf("plots/voomTrend.pdf", height = 5, width = 8)
 plot(v$voom.xy$x, v$voom.xy$y, xlab = v$voom.xy$xlab, ylab = v$voom.xy$ylab,
-     pch = 16, cex = 0.25)
+     pch = 16, cex = 0.25,
+     cex.lab = 1.5, cex.axis = 1.5)
 lines(v$voom.line, col = "red")
 dev.off()
 ```
@@ -192,10 +199,10 @@ pdf("plots/lengthAveExp.pdf", height = 4, width = 8)
 ggplot(tt, aes(x=length, y=AveExpr)) +
   stat_binhex() +
   theme_bw() +
-  labs(y = "average expression") +
+  labs(x="Gene length", y = "Average expression (log-CPM)", fill = "Density:\nnumber of \ngenes") +
   scale_x_continuous(trans = "log10") +
   scale_fill_viridis(direction = -1, option="A") +
-  theme(text=element_text(size = 20), legend.position = c(0.92, 0.6))
+  theme(text=element_text(size = 20))
 dev.off()
 
 cor(tt$length, tt$AveExpr)
@@ -208,13 +215,14 @@ cor(tt$length, tt$AveExpr)
 sm <- which(efit$genes$SYMBOL=="Smchd1")
 imprinted <- which(efit$genes$SYMBOL %in% c("Ndn", "Mkrn3", "Peg12"))
 pdf("plots/md.pdf", height = 5, width = 8)
-  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA)
+  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA,
+         cex.lab = 1.5, cex.axis = 1.5)
   # highlight smchd1
   points(efit$Amean[sm], efit$coefficients[sm, 1], col = "green", pch = 16, cex = 1)
   points(efit$Amean[imprinted], efit$coefficients[imprinted, 1], col = "orange", pch = 16, cex = 1)
   legend("topright", legend = c("Imprinted", "Up", "NotSig", "Down", "Smchd1"),
          col = c("orange","red", "black", "blue", "green"),
-         cex = 0.9, 
+         cex = 1.2, 
          pch = c(16, 16, 16, 16, 16),
          pt.cex = c(1, 1, 0.3, 1, 1))
 dev.off()
@@ -315,7 +323,8 @@ pdf("plots/barcodeStrict.pdf", height = 5, width = 8)
 barcodeplot(efit$t[, 1], index=index.strict,
             gene.weights = gene.weights[index.strict],
             labels = c("WT", "Smchd1"),
-            xlab = "Moderated t")
+            xlab = "Moderated t",
+            cex.lab = 1.5, cex.axis = 1.5, cex = 1.5)
 dev.off()
 ```
 

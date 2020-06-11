@@ -84,3 +84,23 @@ ggplot(qcdata, aes(x = length, y = Quality, fill = length, colour = length)) +
 dev.off()
 ```
 
+```{r}
+maxLength = max(qcdata$`Length of Read`)
+qcdata$LengthGroup <- Hmisc::cut2(qcdata$`Length of Read`, cuts = c(0, 500, 1000,
+                                                     3000, maxLength))
+qcdata$LengthGroup <- gsub(" ", "", qcdata$LengthGroup)
+qcdata$LengthGroup <- gsub(",", ", ", qcdata$LengthGroup)
+
+qcdata$LengthGroup <- factor(qcdata$LengthGroup, levels = c(
+  "[0, 500)", "[500, 1000)", "[1000, 3000)", "[3000, 1823562]"
+))
+
+pdf("lengthqualityviolin.pdf", height = 4, width = 8)
+ggplot(qcdata, aes(x=LengthGroup, y=Quality, fill=LengthGroup, colour = LengthGroup)) +
+  geom_violin(alpha = 0.4) +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.position = "none") +
+  labs(x = "Read length")
+dev.off()
+```
+

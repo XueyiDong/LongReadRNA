@@ -60,21 +60,34 @@ isoClass.flair$count <- rowSums(count.flair[, 2:5])[match(substring(isoClass.fla
 isoClass.talon$count <- rowSums(count.talon[, 12:15])[match(isoClass.talon$isoform, count.talon$annot_transcript_id)]
 
 isoClass <- rbind(isoClass.fltsa, isoClass.flair, isoClass.talon)
-isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "intergenic", "antisense"))
+isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "genic", "genic_intron", "intergenic", "fusion", "antisense"))
+isoClass$method <- gsub("FLTSA", "FLAMES", isoClass$method)
+
+library(RColorBrewer)
+library(scales)
+col.category <- brewer.pal(nlevels(isoClass$structural_category), "Set1")
 
 pdf("isoformClass.pdf", height = 5, width = 8)
 ggplot(isoClass, aes(x = method, fill=structural_category)) + 
   geom_bar(position = position_stack(reverse = TRUE)) +
   theme_bw() +
   geom_hline(yintercept = 164, linetype="dashed") +
-  labs(y = "Number of transcripts")
+  labs(y = "Number of transcripts", x = "Method", fill = "Structural category") +
+  theme(text = element_text(size = 20), legend.position = c(0.75, 0.75),
+        legend.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.background = element_rect(linetype = "solid", colour = "black", size = 0.25)) +
+  scale_fill_manual(values = col.category[1:6])
 dev.off()
 
 pdf("isoformClassCount.pdf", height = 5, width = 8)
 ggplot(isoClass, aes(x=method, y=count, fill=structural_category)) +
   geom_bar(position = position_stack(reverse = TRUE), stat = "identity") +
-  labs(y = "Read count") +
-  theme_bw()
+  labs(y = "Read count", x = "Method", fill = "Structural category") +
+  theme_bw() +
+  theme(text = element_text(size = 20), legend.position = "none") +
+  scale_fill_manual(values = col.category[1:6]) +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))
 dev.off()
 
 pdf("IsoformClassLengthFLTSA.pdf", height = 5, width = 8)

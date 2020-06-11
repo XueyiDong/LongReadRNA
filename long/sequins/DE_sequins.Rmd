@@ -83,14 +83,19 @@ cor(tt$logFC, tt$logFC_expected)
 
 pdf("logfc.pdf", height = 5, width = 8)
 ggplot(tt, aes(x = logFC_expected, y = logFC)) +
-  geom_point(aes(colour=LENGTH)) +
+  geom_point() +
   theme_bw() +
   theme(text = element_text(size = 20), 
         legend.text = element_text(size=16)) +
-  labs(colour="Length") +
-  scale_colour_gradient(name = "Length", trans = "log", breaks= c(250, 500, 1000, 2000, 4000, 8000))
+  labs(x = "Expected logFC", y="Estimated logFC") +
+  scale_x_continuous(breaks = seq(-4, 4, 2), limits = c(-4.1, 4.1)) +
+  scale_y_continuous(breaks = seq(-4, 4, 2)) +
+  geom_smooth(method="lm")
 dev.off()
 
+# calculate r square
+lfc.lm <-lm(tt$logFC ~ tt$logFC_expected)
+summary(lfc.lm)
 ```
 
 logFC showed good correlation. GOOOOOD!

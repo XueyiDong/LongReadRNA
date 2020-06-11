@@ -110,7 +110,7 @@ txStat <- sapply(unique(readDF$seqnames), function(x){
 
 txStat <- as.data.frame(t(txStat))
 colnames(txStat) <- c("tx_len", "mean", "median", "fl95", "fl90", "count")
-txStat$log_count <- log10(txStat$count)
+txStat$log_count <- log(txStat$count)
 
 ggplot(txStat, aes(x=tx_len, y=median, size=log_count))+
   scale_x_continuous(trans = "log10") +
@@ -125,11 +125,13 @@ ggplot(txStat, aes(x=tx_len, y=fl90, size=log_count))+
   geom_point()
 
 pdf("txLenFL.pdf", height = 5, width = 8)
-ggplot(txStat, aes(x=tx_len, y=fl95, size=log_count))+
+ggplot(txStat, aes(x=tx_len, y=fl95, colour = log_count))+
   scale_x_continuous(trans = "log10") +
-  geom_point(alpha = .7) +
-  labs(x = "Transcript length", y = "Fraction of full-length") +
-  theme_bw()
+  geom_point() +
+  labs(x = "Annotated transcript length", y = "Fraction of full-length", colour = "log count") +
+  theme_bw() +
+  theme(text = element_text(size = 20)) +
+  scale_colour_viridis()
 dev.off()
 
 
@@ -159,6 +161,8 @@ readDF$isFullLength <- readDF$covFraction >= 0.95
 pdf("AlignFL.pdf", height = 5, width = 8)
 ggplot(readDF, aes(x=isFullLength, y=alignedFraction, fill=isFullLength)) +
   geom_violin() +
-  theme_bw()
+  theme_bw() +
+  theme(text = element_text(size = 20), legend.position = "none") +
+  labs(x = "Is full-length read", y = "Fraction of aligned bases")
 dev.off()
 
