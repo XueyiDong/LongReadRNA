@@ -17,11 +17,19 @@ FLAMES=/wehisan/home/allstaff/d/dong.x/Programs/FLAMES
 anno=/wehisan/home/allstaff/d/dong.x/annotation/sequins
 input=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/sequins_rebasecall/pass/merged
 out=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/flames
-config=/wehisan/home/allstaff/d/dong.x/analysis/2020/sequins/flames/config_bulk_nanopore.json
+config=/wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/sequins/flames/config_sequin.json
 
-python $FLAMES/python/bulk_long_pipeline.py \
+# python $FLAMES/python/bulk_long_pipeline.py \
+#  -a $anno/rnasequin_annotation_2.4.gtf\
+#  -i $input\
+#  -o $out\
+#  -f $anno/rnasequin_decoychr_2.4.fa\
+#  -c $config\
+#  -m /wehisan/home/allstaff/d/dong.x/Programs/minimap2
+
+python $FLAMES/python/sc_long_pipeline.py \
  -a $anno/rnasequin_annotation_2.4.gtf\
- -i $input\
+ -i $out/merged.fastq.gz\
  -o $out\
  -f $anno/rnasequin_decoychr_2.4.fa\
  -c $config\

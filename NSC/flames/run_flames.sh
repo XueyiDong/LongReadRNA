@@ -1,28 +1,37 @@
 #!/bin/bash
-#PBS -N scFLT
-#PBS -q submit
-#PBS -l nodes=1:ppn=16,mem=100gb,walltime=1000:00:00
-#PBS -M dong.x@wehi.edu.au
-#PBS -m abe
-#PBS -j oe
-#PBS -o scFLT_remap.o
+#SBATCH --time=48:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=100G
+#SBATCH --mail-user=dong.x@wehi.edu.au
+#SBATCH --mail-type=BEGIN,END,FAIL
 
-cd /wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT
+cd /wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/NSC/flames
 
 module load samtools
-module load python
+module load anaconda3
 
-sftwr=/stornext/General/data/user_managed/grpu_mritchie_1/LuyiTian/git/scFLT
+source activate
+conda activate FLAMES
+
+FLAMES=/wehisan/home/allstaff/d/dong.x/Programs/FLAMES
 anno=/wehisan/home/allstaff/d/dong.x/annotation/Mouse
-input=/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/Xueyi/scBarcode.fq
+input=/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/data/rebasecall/pass/merged/used
 # out=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT
-out=/wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT
-config=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT/config_bulk_nanopore.json
+# out=/wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT
+config=/wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/NSC/flames/config_bulk_nanopore.json
 
-python $sftwr/sc_long_pipeline.py \
- --gff3 $anno/gencode.vM23.annotation.gff3\
- --infq $input\
- --outdir $out/run1 \
+# python $FLAMES/python/bulk_long_pipeline.py \
+#  -a $anno/gencode.vM23.annotation.gff3\
+#  -i $input\
+#  -o ./results \
+#  --genomefa $anno/mm10/mm10.fa\
+#  --config_file $config\
+#  --minimap2 /wehisan/home/allstaff/d/dong.x/Programs/minimap2
+
+python $FLAMES/python/sc_long_pipeline.py \
+ -a $anno/gencode.vM23.annotation.gff3\
+ -i ./results/merged.fastq.gz\
+ -o ./results \
  --genomefa $anno/mm10/mm10.fa\
  --config_file $config\
  --minimap2 /wehisan/home/allstaff/d/dong.x/Programs/minimap2

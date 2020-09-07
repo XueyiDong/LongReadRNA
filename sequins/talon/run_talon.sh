@@ -1,20 +1,21 @@
 #!/bin/bash
-#PBS -N talon
-#PBS -q submit
-#PBS -l nodes=1:ppn=4,mem=80gb,walltime=120:00:00
-#PBS -M dong.x@wehi.edu.au
-#PBS -m abe
-#PBS -j oe
+#SBATCH --time=48:00:00
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=100G
+#SBATCH --mail-user=dong.x@wehi.edu.au
+#SBATCH --mail-type=BEGIN,END,FAIL
 
-# TALON_WF=/stornext/General/data/user_managed/grpu_mritchie_1/HasaruK/talon_workflow
+export PATH=$PATH:/wehisan/home/allstaff/d/dong.x/Programs/minimap2
+TALON_WF=/stornext/General/data/user_managed/grpu_mritchie_1/HasaruK/talon_workflow
 SEQUINS_DIR=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin
-DATA_DIR=$SEQUINS_DIR/20200228_YPRDP_2xsequin_mixAB/fastq_pass/merged
-OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
+DATA_DIR=$SEQUINS_DIR/20200228_YPRDP_2xsequin_mixAB/sequins_rebasecall/pass/merged
+OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/sequins/talon
 # # map
-# $TALON_WF/minimap2/minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode01.fastq > $OUT_DIR/barcode01.sam
-# $TALON_WF/minimap2/minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode02.fastq > $OUT_DIR/barcode02.sam
-# $TALON_WF/minimap2/minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode03.fastq > $OUT_DIR/barcode03.sam
-# $TALON_WF/minimap2/minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode04.fastq > $OUT_DIR/barcode04.sam
+# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode01.fq.gz > $OUT_DIR/barcode01.sam
+# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode02.fq.gz > $OUT_DIR/barcode02.sam
+# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode03.fq.gz > $OUT_DIR/barcode03.sam
+# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode04.fq.gz > $OUT_DIR/barcode04.sam
+#------------------------
 # # convert to bam
 # samtools view -S -b $OUT_DIR/barcode01.sam > $OUT_DIR/barcode01.bam
 # samtools view -S -b $OUT_DIR/barcode02.sam > $OUT_DIR/barcode02.bam
@@ -25,6 +26,7 @@ OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
 # samtools index $OUT_DIR/barcode02.bam
 # samtools index $OUT_DIR/barcode03.bam
 # samtools index $OUT_DIR/barcode04.bam
+#-------------------------
 # # run TranscriptClean
 # module load samtools
 # module load bedtools
@@ -40,9 +42,10 @@ OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
 # Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode03
 # python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode04.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode04
 # Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode04
-# # run TALON
+# conda deactivate
+# run TALON
 # module unload python
-cd /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/sequins/talon
+cd /wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/sequins/talon
 
 module load anaconda3
 source activate
