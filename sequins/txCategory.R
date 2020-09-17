@@ -66,32 +66,34 @@ isoClass$structural_category <- factor(isoClass$structural_category, levels =c("
 library(RColorBrewer)
 library(scales)
 library(ggplot2)
+library(cowplot)
 col.category <- brewer.pal(nlevels(isoClass$structural_category), "Set1")
 
-pdf("isoformClass.pdf", height = 5, width = 8)
-ggplot(isoClass, aes(x = method, fill=structural_category)) + 
+# pdf("isoformClass.pdf", height = 5, width = 8)
+plot_isoformClass <- ggplot(isoClass, aes(x = method, fill=structural_category)) + 
   geom_bar(position = position_stack(reverse = TRUE)) +
   theme_bw() +
   geom_hline(yintercept = 164, linetype="dashed") +
   labs(y = "Number of transcripts", x = "Method", fill = "Structural category") +
-  theme(text = element_text(size = 20), legend.position = c(0.75, 0.75),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18),
-        legend.background = element_rect(linetype = "solid", colour = "black", size = 0.25)) +
+  theme(text = element_text(size = 20), legend.position = "none") +
   scale_fill_manual(values = col.category)
-dev.off()
+# dev.off()
 
-pdf("isoformClassCount.pdf", height = 5, width = 8)
-ggplot(isoClass, aes(x=method, y=count, fill=structural_category)) +
+# pdf("isoformClassCount.pdf", height = 5, width = 8)
+plot_isoformCount <- ggplot(isoClass, aes(x=method, y=count, fill=structural_category)) +
   geom_bar(position = position_stack(reverse = TRUE), stat = "identity") +
   labs(y = "Read count", x = "Method", fill = "Structural category") +
   theme_bw() +
-  theme(text = element_text(size = 20), legend.position = "none") +
+  theme(text = element_text(size = 20), legend.position = "bottom") +
   scale_fill_manual(values = col.category) +
   scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))
+# dev.off()
+
+leg <- get_legend(plot_isoformCount)
+
+pdf("plots/isoformClassAndCount.pdf", height = 5, width = 17)
+plot_grid(plot_isoformClass, plot_isoformCount + theme(legend.position = "none"), leg, rel_heights = c(1, 0.2))
 dev.off()
-
-
 
 pdf("IsoformClassLengthflames.pdf")
 ggplot(isoClass.flames, aes(x=structural_category, y=length, fill=structural_category)) +

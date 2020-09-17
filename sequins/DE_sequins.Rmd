@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(rsubread)
+library(Rsubread)
 library(limma)
 library(edgeR)
 library(ggplot2)
@@ -19,7 +19,7 @@ library(ggplot2)
 ## Counting
 
 ```{r}
-bams <- paste0("./talon/barcode0", 1:4, ".sam")
+bams <- paste0("./talon/labeled/barcode0", 1:4, "_clean_labeled.sam")
 gff <- "/wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf"
 fc <- featureCounts(bams, annot.ext=gff, isGTFAnnotationFile = TRUE, isLongRead = TRUE, primaryOnly=TRUE)
 ```
@@ -44,7 +44,7 @@ lcpm <- cpm(x, log=TRUE)
 7 genes were filtered out. 69 remained.
 
 ```{r}
-pdf("MDS_sequins.pdf", height = 5, width = 8)
+pdf("plots/MDS_sequins.pdf", height = 5, width = 8)
 plotMDS(lcpm, labels = c("mixA1", "mixA2", "mixB1", "mixB2"), col = c("#071535", "#071535", "#D12300", "#D12300"))
 dev.off()
 ```
@@ -53,7 +53,7 @@ dev.off()
 design <- model.matrix(~x$samples$group)
 colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))
 colnames(design) <- sub("x\\$samples\\$", "", colnames(design))
-pdf("voom_sequins.pdf", height = 4)
+pdf("plots/voom_sequins.pdf", height = 4)
 v <- voomWithQualityWeights(x, design=design, plot=TRUE)
 dev.off()
 ```
@@ -70,7 +70,7 @@ summary(dt)
 21 down and 18 up in BvsA.
 
 ```{r}
-pdf("MD_sequins.pdf", height = 5, width = 8)
+pdf("plots/MD_sequins.pdf", height = 5, width = 8)
 plotMD(efit, status=dt[,2], column = 2, values=c(1,-1), hl.col=c("red", "blue"),
        main = "mix B vs A")
 dev.off()
@@ -86,7 +86,7 @@ tt$LENGTH <- anno$LENGTH[match(rownames(tt), anno$NAME)]
 cor(tt$logFC, tt$logFC_expected)
 lfc.lm <-lm(tt$logFC ~ tt$logFC_expected)
 
-pdf("logfc.pdf", height = 5, width = 8)
+pdf("plots/logfc.pdf", height = 5, width = 8)
 ggplot(tt, aes(x = logFC_expected, y = logFC)) +
   geom_point() +
   theme_bw() +
@@ -109,7 +109,7 @@ logFC showed good correlation. GOOOOOD!
 
 Length vs average expression
 ```{r}
-pdf("lengthAveExpSequins.pdf")
+pdf("plots/lengthAveExpSequins.pdf")
 ggplot(tt, aes(x = LENGTH, y = AveExpr)) +
   geom_point() +
   theme_bw() +
@@ -140,6 +140,7 @@ TPR = sum(tt$DE & tt$sig) / sum(tt$DE)
 
 
 ```{r}
+# 
 #         ==========     _____ _    _ ____  _____  ______          _____  
 #         =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
 #           =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
@@ -151,10 +152,10 @@ TPR = sum(tt$DE & tt$sig) / sum(tt$DE)
 # //========================== featureCounts setting ===========================\\
 # ||                                                                            ||
 # ||             Input files : 4 SAM files                                      ||
-# ||                           o barcode01.sam                                  ||
-# ||                           o barcode02.sam                                  ||
-# ||                           o barcode03.sam                                  ||
-# ||                           o barcode04.sam                                  ||
+# ||                           o barcode01_clean_labeled.sam                    ||
+# ||                           o barcode02_clean_labeled.sam                    ||
+# ||                           o barcode03_clean_labeled.sam                    ||
+# ||                           o barcode04_clean_labeled.sam                    ||
 # ||                                                                            ||
 # ||              Annotation : rnasequin_annotation_2.4.gtf (GTF)               ||
 # ||      Dir for temp files : .                                                ||
@@ -176,29 +177,29 @@ TPR = sum(tt$DE & tt$sig) / sum(tt$DE)
 # ||    Meta-features : 76                                                      ||
 # ||    Chromosomes/contigs : 1                                                 ||
 # ||                                                                            ||
-# || Process SAM file barcode01.sam...                                          ||
+# || Process SAM file barcode01_clean_labeled.sam...                            ||
 # ||    Single-end reads are included.                                          ||
-# ||    Total alignments : 2164910                                              ||
-# ||    Successfully assigned alignments : 1812361 (83.7%)                      ||
-# ||    Running time : 0.59 minutes                                             ||
+# ||    Total alignments : 2164531                                              ||
+# ||    Successfully assigned alignments : 2051593 (94.8%)                      ||
+# ||    Running time : 0.20 minutes                                             ||
 # ||                                                                            ||
-# || Process SAM file barcode02.sam...                                          ||
+# || Process SAM file barcode02_clean_labeled.sam...                            ||
 # ||    Single-end reads are included.                                          ||
-# ||    Total alignments : 856806                                               ||
-# ||    Successfully assigned alignments : 729141 (85.1%)                       ||
-# ||    Running time : 0.27 minutes                                             ||
+# ||    Total alignments : 853184                                               ||
+# ||    Successfully assigned alignments : 817567 (95.8%)                       ||
+# ||    Running time : 0.09 minutes                                             ||
 # ||                                                                            ||
-# || Process SAM file barcode03.sam...                                          ||
+# || Process SAM file barcode03_clean_labeled.sam...                            ||
 # ||    Single-end reads are included.                                          ||
-# ||    Total alignments : 1738360                                              ||
-# ||    Successfully assigned alignments : 1266155 (72.8%)                      ||
-# ||    Running time : 0.49 minutes                                             ||
+# ||    Total alignments : 1687593                                              ||
+# ||    Successfully assigned alignments : 1406938 (83.4%)                      ||
+# ||    Running time : 0.17 minutes                                             ||
 # ||                                                                            ||
-# || Process SAM file barcode04.sam...                                          ||
+# || Process SAM file barcode04_clean_labeled.sam...                            ||
 # ||    Single-end reads are included.                                          ||
-# ||    Total alignments : 2492264                                              ||
-# ||    Successfully assigned alignments : 1877129 (75.3%)                      ||
-# ||    Running time : 0.71 minutes                                             ||
+# ||    Total alignments : 2531731                                              ||
+# ||    Successfully assigned alignments : 2084928 (82.4%)                      ||
+# ||    Running time : 0.24 minutes                                             ||
 # ||                                                                            ||
 # ||                                                                            ||
 # \\============================================================================//

@@ -16,66 +16,63 @@ library(data.table)
 library(ggplot2)
 ```
 
-First, read in the data and correct counts by the tracking file
+First, read in the data
 
 ```{r}
-data <- read.csv("/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/FLTSA_output/transcript_count.csv", stringsAsFactors = FALSE)
+data <- read.csv("/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/flames/transcript_count.csv", stringsAsFactors = FALSE)
 anno <- read.delim("/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/annotations/rnasequin_isoforms_2.4.tsv", sep = "\t", stringsAsFactors = FALSE)
-tracking <- read.table("comp.tracking", stringsAsFactors = FALSE)
-info <- strsplit2(tracking$V5, "|", fixed=TRUE)
-tracking$transcript <- sub("transcript:", "", info[,2])
-tracking$transcript_anno <- strsplit2(tracking$V3, "|", fixed=TRUE)[,2]
-tracking.eq <- tracking[tracking$V4=="=",]
-m <- match(data$transcript_id, tracking.eq$transcript)
-data$transcript_anno <- tracking.eq$transcript_anno[m]
-data$transcript_anno[is.na(data$transcript_anno)] <- data$transcript_id[is.na(data$transcript_anno)]
+# tracking <- read.table("comp.tracking", stringsAsFactors = FALSE)
+# info <- strsplit2(tracking$V5, "|", fixed=TRUE)
+# tracking$transcript <- sub("transcript:", "", info[,2])
+# tracking$transcript_anno <- strsplit2(tracking$V3, "|", fixed=TRUE)[,2]
+# tracking.eq <- tracking[tracking$V4=="=",]
+# m <- match(data$transcript_id, tracking.eq$transcript)
+# data$transcript_anno <- tracking.eq$transcript_anno[m]
+# data$transcript_anno[is.na(data$transcript_anno)] <- data$transcript_id[is.na(data$transcript_anno)]
 ```
 
-Calculate correlation to know which is A and which is B
+
 
 ```{r}
-m <- match(anno$NAME, data$transcript_anno)
-cor(data[,3][m], anno[,3], us="complete.obs")
-cor(data[,3][m], anno[,4], us="complete.obs")
-cor(data[,4][m], anno[,3], us="complete.obs")
-cor(data[,4][m], anno[,4], us="complete.obs")
-cor(data[,5][m], anno[,3], us="complete.obs")
-cor(data[,5][m], anno[,4], us="complete.obs")
-cor(data[,6][m], anno[,3], us="complete.obs")
-cor(data[,6][m], anno[,4], us="complete.obs")
+# m <- match(anno$NAME, data$transcript_id)
+# cor(data[,3][m], anno[,3], us="complete.obs")
+# cor(data[,3][m], anno[,4], us="complete.obs")
+# cor(data[,4][m], anno[,3], us="complete.obs")
+# cor(data[,4][m], anno[,4], us="complete.obs")
+# cor(data[,5][m], anno[,3], us="complete.obs")
+# cor(data[,5][m], anno[,4], us="complete.obs")
+# cor(data[,6][m], anno[,3], us="complete.obs")
+# cor(data[,6][m], anno[,4], us="complete.obs")
 ```
 
-sample 1: mix B
-sample 2: mix B
-sample 3: mix A
-sample 4: mix A
 
 ```{r}
-par(mfrow=c(2,2))
-plot(data[,3][m], anno[,4], log="xy", 
-     xlab = "count", ylab="theoretiacl abundance", main="sample 1, mix B")
-plot(data[,4][m], anno[,4], log="xy", 
-     xlab = "count", ylab="theoretiacl abundance", main="sample 2, mix B")
-plot(data[,5][m], anno[,3], log="xy", 
-     xlab = "count", ylab="theoretiacl abundance", main="sample 3, mix A")
-plot(data[,6][m], anno[,3], log="xy", 
-     xlab = "count", ylab="theoretiacl abundance", main="sample 4, mix A")
+# par(mfrow=c(2,2))
+# plot(data[,3][m], anno[,4], log="xy", 
+#      xlab = "count", ylab="theoretiacl abundance", main="sample 1, mix B")
+# plot(data[,4][m], anno[,4], log="xy", 
+#      xlab = "count", ylab="theoretiacl abundance", main="sample 2, mix B")
+# plot(data[,5][m], anno[,3], log="xy", 
+#      xlab = "count", ylab="theoretiacl abundance", main="sample 3, mix A")
+# plot(data[,6][m], anno[,3], log="xy", 
+#      xlab = "count", ylab="theoretiacl abundance", main="sample 4, mix A")
 ```
 
 ```{r}
 cpm <- cpm(data[3:6])
-
+m <- match(anno$NAME, data$transcript_id)
 annoData <- cbind(anno, cpm[m,])
-colnames(annoData)[5:8] <- paste0("mix", c("B1", "B2", "A1", "A2"))
+colnames(annoData)[5:8] <- paste0("mix", c("B1", "A2", "B2", "A1"))
 annoData <- melt(annoData, id.vars = 1:4)
 annoData$exp <-annoData$MIX_A
 annoData$exp[annoData$variable %in% c("mixB1", "mixB2")] <- annoData$MIX_B[annoData$variable %in% c("mixB1", "mixB2")]
 colnames(annoData)[5] <- "sample"
 annoData$sample <- factor(annoData$sample, levels = c("mixA1", "mixA2", "mixB1", "mixB2"))
+cor(annoData$exp, annoData$value, use = "complete.obs")
 
 library(ggplot2)
 library(scales)
-pdf("countsVsAnno.pdf", height = 5, width = 8)
+pdf("plots/countsVsAnno.pdf", height = 5, width = 8)
 ggplot(annoData, aes(x=exp, y=value, colour=sample)) +
   geom_point() +
   theme_bw() +
@@ -84,12 +81,12 @@ ggplot(annoData, aes(x=exp, y=value, colour=sample)) +
   labs(x = "Expected abundance", y = "CPM") +
   scale_colour_manual(values = c("#869700", "#D12300", "#071535", "#54B5E1"))+
   theme(text = element_text(size = 20)) +
-  annotate(geom="text", x=300, y=160000, label=expression(paste(rho, "=0.80")), size=8) 
+  annotate(geom="text", x=300, y=160000, label=expression(paste(rho, "=0.81")), size=8) 
 dev.off()
 
-lm.count <- lm(annoData$value~annoData$exp)
-summary(lm.count)
-cor(annoData$value, annoData$exp, use = "complete.obs")
+# lm.count <- lm(annoData$value~annoData$exp)
+# summary(lm.count)
+# cor(annoData$value, annoData$exp, use = "complete.obs")
 ```
 
 
@@ -97,18 +94,18 @@ OK. Now prepare for DRIMSeq.
 
 ```{r}
 library(DRIMSeq)
-counts <- data[,c(2, 7, 3, 4, 5, 6)]
+counts <- data[,c(2, 1, 3, 4, 5, 6)]
 colnames(counts)[2] <- "feature_id"
 samples <- data.frame(
   sample_id = colnames(counts)[3:6],
-  group = c("B", "B", "A", "A")
+  group = c("B", "A", "B", "A")
 )
-# resolve duplicate
-for(i in which(duplicated(counts$feature_id))){
-  j = which(counts$feature_id == counts$feature_id[i])[1]
-  counts[j,3:6] <- counts[j, 3:6] + counts[i, 3:6]
-}
-counts <- counts[!duplicated(counts$feature_id),]
+# # resolve duplicate
+# for(i in which(duplicated(counts$feature_id))){
+#   j = which(counts$feature_id == counts$feature_id[i])[1]
+#   counts[j,3:6] <- counts[j, 3:6] + counts[i, 3:6]
+# }
+# counts <- counts[!duplicated(counts$feature_id),]
 
 d <- dmDSdata(counts=counts, samples = samples)
 plotData(d)
@@ -164,6 +161,10 @@ Two-stage test (code copied from DRIMSeq vignette)
 ```{r}
 res <- results(d)
 res.txp <- results(d, level = "feature")
+no.na <- function(x) ifelse(is.na(x), 1, x) 
+res$pvalue <- no.na(res$pvalue) 
+res.txp$pvalue <- no.na(res.txp$pvalue)
+
 library(stageR)
 ## Assign gene-level pvalues to the screening stage
 pScreen <- res$pvalue
@@ -204,14 +205,14 @@ proportion$MIX_B <- anno$MIX_B / geneanno$MIX_B[m]
 
 m <- match(proportion$txID, proportions(d)[,2])
 cor(proportion$MIX_B, proportions(d)[,3][m], use="complete.obs")
-cor(proportion$MIX_A, proportions(d)[,5][m], use="complete.obs")
+cor(proportion$MIX_A, proportions(d)[,4][m], use="complete.obs")
 ```
 
 ```{r}
 par(mfrow=c(1,2))
 plot(proportion$MIX_B, proportions(d)[,3][m], main="mix B",
      xlab = "expected proportion", ylab = "estimated proportion")
-plot(proportion$MIX_A, proportions(d)[,5][m], main="mix A",
+plot(proportion$MIX_A, proportions(d)[,4][m], main="mix A",
      xlab = "expected proportion", ylab = "estimated proportion")
 ```
 
@@ -225,7 +226,7 @@ rownames(y) <- counts(d)$feature_id
 y <- calcNormFactors(y)
 y$samples
 cpm <- cpm(y, log=T)
-plotMDS(cpm, col=as.numeric(as.factor(group)))
+plotMDS(cpm, col=as.numeric(as.factor(y$samples$group)))
 ```
 
 ```{r fit}
@@ -389,9 +390,10 @@ results.all <- rbind(res.all, ds.all)
 results.all$test <- factor(results.all$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript",
                               "diffSplice_simes", "diffSplice_F", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript"))
 
-pdf("DTU_FDR.pdf", width = 8, height = 5)
+pdf("plots/DTU_FDR.pdf", width = 8, height = 5)
 ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
-  geom_boxplot(alpha=.6) +
+  geom_boxplot(alpha=.4, outlier.shape = NA)+
+  geom_point(position = position_jitterdodge(jitter.height = .02), cex=.5, alpha = .5)+
   facet_grid(.~level) +
   theme_bw() +
   # theme(axis.text.x = element_text(angle = 90)) +
@@ -403,6 +405,12 @@ ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
 dev.off()
 ```
 
+```{r}
+
+```
+ 
+
+
 New plot for the paper
 
 ```{r}
@@ -411,7 +419,7 @@ results.plot$test <- factor(results.plot$test, levels = c("DRIMSeq_gene", "DRIMS
 
 
 
-pdf("DTU_FDR_TRUE.pdf", height = 5, width = 8)
+pdf("plots/DTU_FDR_TRUE.pdf", height = 5, width = 8)
 ggplot(na.omit(results.plot[results.plot$DTU == TRUE,]), aes(x = test, y = FDR, fill=level, colour = level))+
   geom_boxplot(alpha = .6) +
   geom_hline(yintercept = 0.05, linetype="dashed") +
@@ -428,7 +436,7 @@ dev.off()
 
 Calculate FDR and TPR.
 
-> FDR = number of falsely detected genes / number of detected genes
+FDR = number of falsely detected genes / number of detected genes
 TPR = number of correctly detected genes / number of positive control genes
 
 ```{r}
@@ -456,7 +464,7 @@ TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIM
 FDR all 0. now plot TPR
 
 ```{r}
-pdf("DTU_TPR.pdf")
+pdf("plots/DTU_TPR.pdf")
 ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=48:00:00
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=12
 #SBATCH --mem=100G
 #SBATCH --mail-user=dong.x@wehi.edu.au
 #SBATCH --mail-type=BEGIN,END,FAIL
@@ -34,4 +34,4 @@ python $FLAMES/python/sc_long_pipeline.py \
  -o ./results \
  --genomefa $anno/mm10/mm10.fa\
  --config_file $config\
- --minimap2 /wehisan/home/allstaff/d/dong.x/Programs/minimap2
+ --minimap2 /stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/script/minimap2-2.17_x64-linux
