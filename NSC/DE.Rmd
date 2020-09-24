@@ -200,7 +200,7 @@ cor(tt$length, tt$AveExpr)
 sm <- which(efit$genes$SYMBOL=="Smchd1")
 imprinted <- which(efit$genes$SYMBOL %in% c("Ndn", "Mkrn3", "Peg12"))
 pdf("plots/md.pdf", height = 5, width = 8)
-  plotMD(efit, status=dt, column=1, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA,
+  plotMD(efit, status=dt, column=2, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA,
          cex.lab = 1.5, cex.axis = 1.5)
   # highlight smchd1
   points(efit$Amean[sm], efit$coefficients[sm, 1], col = "green", pch = 16, cex = 1)
@@ -213,29 +213,6 @@ pdf("plots/md.pdf", height = 5, width = 8)
 dev.off()
 ```
 
-### heatmap
-
-Use top 200 genes
-
-```{r}
-library(pheatmap)
-topGenes <- match(tt[1:200, 1], x$genes$ENTREZID)
-
-annotation_col <- data.frame(group = x$samples$group)
-ann_colors = list(
-  group = c(smchd1 = col[1], wt = col[2])
-)
-rownames(annotation_col) <- colnames(x)
-pdf("plots/heatmap.pdf", width = 4)
-pheatmap(lcpm[topGenes,], scale = "row", 
-         color = colorRampPalette(colors = c("blue","white","red"))(100),
-         annotation_col = annotation_col,
-         annotation_colors = ann_colors,
-         show_rownames = FALSE,
-         labels_col = 1:7,
-         border_color = NA)
-dev.off()
-```
 
 ## geneset test from Chen et al. 2015
 ```{r}
@@ -259,20 +236,15 @@ gene.weights[m[!is.na(m)]] <- up$logFC[!is.na(m)]
 m <- match(down$EntrezID, x$genes$ENTREZID)
 gene.weights[m[!is.na(m)]] <- down$logFC[!is.na(m)]
 
-# for (i in 1:3) {
-  cat("Test for Kelan's genes in", colnames(cont)[1], "\n")
-  print(roast(v, index.all, gene.weights = gene.weights[index.all], design=design))
-  cat("\n")
-# }
 
-# pdf("barcode.pdf", height=12, width=10)
-# png("barcode.png", height = 800, width = 640)
-# par(mfrow=c(3,1))
-# for(i in 1:3){
-  barcodeplot(efit$t[, 1], index=index.all,
-              gene.weights = gene.weights[index.all])
-# }
-# dev.off()
+cat("Test for Kelan's genes in Smchd1-null vs WT  \n")
+print(roast(v, index.all, gene.weights = gene.weights[index.all], design=design))
+cat("\n")
+
+
+barcodeplot(efit$t[, 2], index=index.all,
+            gene.weights = gene.weights[index.all])
+
 ```
 
 ## Gene set test from Chen et al., use less genes
@@ -291,53 +263,23 @@ m <- match(up.strict$EntrezID, x$genes$ENTREZID)
 gene.weights[m[!is.na(m)]] <- up.strict$logFC[!is.na(m)]
 m <- match(down.strict$EntrezID, x$genes$ENTREZID)
 gene.weights[m[!is.na(m)]] <- down.strict$logFC[!is.na(m)]
-# roast
-# cat("Test for Kelan's genes in", colnames(cont)[1], "\n")
+
 print(roast(v, index.strict, gene.weights = gene.weights[index.strict], 
             design=design, nrot = 9999))
-# cat("\n")
+
 ```
 
-Up p-value is getting higher...emmmmm
 
 Barcode plot
 
 ```{r}
 pdf("plots/barcodeStrict.pdf", height = 5, width = 8)
-barcodeplot(efit$t[, 1], index=index.strict,
+barcodeplot(efit$t[, 2], index=index.strict,
             gene.weights = gene.weights[index.strict],
-            labels = c("WT", "Smchd1"),
+            labels = c("WT", "Smchd1-null"),
             xlab = "Moderated t",
             cex.lab = 1.5, cex.axis = 1.5, cex = 1.5)
 dev.off()
-```
-
-## Gene set test of imprinted genes
-
-```{r}
-imprinted <- read.delim("imprinted_genelist.txt")
-head(imprinted)
-index.imprinted <- x$genes$SYMBOL %in% imprinted$Loci
-cat("Test for imprinted genes in", colnames(cont)[1], "\n")
-print(roast(v, index.imprinted, design=design, contrast=cont[,1]), nrot = 9999)
-cat("\n")
-```
-
-MD plot highlighting imprinted genes
-
-```{r}
-status.imprinted <- rep(0, nrow(x))
-status.imprinted[x$genes$SYMBOL %in% imprinted[imprinted$Expressed.Parental.Allele == "M", 1]] <- 1
-status.imprinted[x$genes$SYMBOL %in% imprinted[imprinted$Expressed.Parental.Allele == "P", 1]] <- -1
-plotMD(efit, status = status.imprinted, main = "Imprinted genes")
-```
-
-
-barcode plot
-
-```{r}
-barcodeplot(efit$t[, 1], index=index.imprinted,
-            main=colnames(cont)[1])
 ```
 
 
@@ -345,7 +287,7 @@ barcodeplot(efit$t[, 1], index=index.imprinted,
 
 ```{r}
 tt <- topTable(efit, number=Inf)
-tt.chen <- read.table("~/analysis/smchd1/old/TopTable.txt", sep="\t")
+tt.chen <- read.table("./Chen_et_al_2015_PNAS/TopTable.txt", sep="\t")
 m <- match(tt$ENTREZID, tt.chen$EntrezID)
 cor(tt$logFC, -tt.chen$logFC[m], use = "complete.obs")
 
@@ -364,8 +306,6 @@ points(tt$logFC[m.up], -tt.chen$logFC[m][m.up], col="red", pch = 20)
 points(tt$logFC[m.down], -tt.chen$logFC[m][m.down], col="green", pch = 20)
 ```
 
-The correlation is only 0.7. That's low.
-
 Let's compare t.
 
 ```{r}
@@ -381,8 +321,6 @@ abline(h=0)
 points(tt$t[m.up], -tt.chen$t[m][m.up], col="red", pch = 20)
 points(tt$t[m.down], -tt.chen$t[m][m.down], col="green", pch = 20)
 ```
-
-Oh, even lower
 
 ### Compare log FC in glimma plot
 
@@ -421,6 +359,9 @@ write.table(topTable(efit, coef=1, n=Inf), file = "results/TopTableMD.txt", sep=
 ```
 
 
+```{r}
+save.image("DE.RData")
+```
 
 
 ```{r}
