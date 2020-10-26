@@ -42,8 +42,8 @@
 # dev.off()
 
 # plot flames isoform classification by SQANTI
-# read SAANTI class
-isoClass.flames <- read.delim("./flames/SQANTI/isoform_annotated_classification.txt", stringsAsFactors = FALSE)
+# read SQANTI class
+isoClass.flames <- read.delim("./flames/SQANTI/isoform_annotated.filtered_classification.txt", stringsAsFactors = FALSE)
 isoClass.flair <- read.delim("./flair/SQANTI/flair.collapse.isoforms_classification.txt", stringsAsFactors = FALSE)
 isoClass.talon <- read.delim("./talon/SQANTI/sequins_talon_talon_classification.txt", stringsAsFactors = FALSE)
 isoClass.flames$method <- "FLAMES"

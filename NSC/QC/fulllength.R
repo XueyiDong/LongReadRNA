@@ -9,9 +9,9 @@ library(Hmisc)
 
 # read and calculate, save to RDS
 
-dir_bam <- "/wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT/run1"
-bams <- paste0("Tx.BC", c("07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18"), ".bam")
-for (i in 1:12){
+dir_bam <- "/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/results/rebasecall/minimap2_mm10"
+bams <- paste0("barcode",c("07", 10:13, 15:17),  ".sorted.bam")
+for (i in 3:8){
   cat("Reading", bams[i], "\n")
   bam1 <- suppressWarnings(readBam(file.path(dir_bam, bams[i])))
   cat("Making read DF\n")
@@ -79,14 +79,14 @@ DF$group[DF$sample %in% c("1", "4", "5", "6")] <- "wt"
 DF$group[DF$sample %in% c("2", "3", "7")] <- "Smchd1"
 
 
-pdf("fullLengthViolinLen.pdf")
+pdf("plots/fullLengthViolinLen.pdf")
 # tx length
 ggplot(DF, aes(x=txLengthGroup, y=covFraction)) +
   geom_violin() +
   theme_bw() +
   ylim(0, 1) 
 dev.off()
-pdf("fullLengthViolinNovelty.pdf")
+pdf("plots/fullLengthViolinNovelty.pdf")
 # tx length and novelty
 ggplot(DF, aes(x=txLengthGroup, y=covFraction, fill = txLengthGroup)) +
   geom_violin() +
