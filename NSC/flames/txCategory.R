@@ -1,9 +1,9 @@
-setwd("./analysis/smchd1/long/scFLT")
+# setwd("./analysis/smchd1/long/scFLT")
 library(ggplot2)
 library(RColorBrewer)
 library(scales)
 
-isoClass <- read.delim("isoform_annotated_classification.txt", stringsAsFactors = FALSE)
+isoClass <- read.delim("isoform_annotated.filtered_classification.txt", stringsAsFactors = FALSE)
 isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "genic", "genic_intron", "intergenic", "fusion", "antisense"))
 
 col.category <- brewer.pal(nlevels(isoClass$structural_category), "Set1")
@@ -19,8 +19,8 @@ ggplot(isoClass, aes(x=structural_category, fill=structural_category)) +
   scale_fill_manual(values = col.category[c(1:4, 7:9, 6)])
 dev.off()
 
-counts <- read.csv("./run1/transcript_count.csv")
-isoClass$count <- rowSums(counts[3:16])[match(isoClass$isoform, paste0("transcript:", counts$transcript_id))]
+counts <- read.csv("./results/transcript_count.csv")
+isoClass$count <- rowSums(counts[3:10])[match(isoClass$isoform, paste0("transcript:", counts$transcript_id))]
 
 pdf("txCategoryCount.pdf", height = 5, width = 8)
 ggplot(isoClass[!is.na(isoClass$count),], aes(x=structural_category, y=count, fill=structural_category))+

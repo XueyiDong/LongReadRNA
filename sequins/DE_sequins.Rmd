@@ -247,5 +247,15 @@ ggplot(read.num, aes(x=category, y=Number)) +
   labs(x="")+
   geom_text(aes(label=Number), position = position_stack(vjust = 0.5), colour="white")
 dev.off()
+
+x$samples$sample <- c("mixA1", "mixA2", "mixB1", "mixB2")
+pdf("plots/libsize.pdf", height = 4)
+ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
+  geom_bar(stat="identity")+
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))+
+  theme_bw() +
+  theme(text = element_text(size = 16)) +
+  labs(y = "Library size", x = "Sample")
+dev.off()
 ```
 

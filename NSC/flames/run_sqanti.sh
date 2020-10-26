@@ -1,10 +1,9 @@
 #!/bin/bash
-#PBS -N sqanti
-#PBS -q submit
-#PBS -l nodes=1:ppn=2,mem=20gb,walltime=24:00:00
-#PBS -M dong.x@wehi.edu.au
-#PBS -m abe
-#PBS -j oe
+#SBATCH --time=1:00:00
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --mail-user=dong.x@wehi.edu.au
+#SBATCH --mail-type=BEGIN,END,FAIL
 
 module load anaconda3
 source activate
@@ -13,12 +12,12 @@ module load R
 module load perl
 module load gmap-gsnap
 
-cd /wehisan/home/allstaff/d/dong.x/analysis/smchd1/long/scFLT
+cd /wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/NSC/flames
 
 # python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
 
 
 python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
-  run1/isoform_annotated.gff3 \
+  results/isoform_annotated.filtered.gff3 \
   /wehisan/home/allstaff/d/dong.x/annotation/Mouse/gencode.vM24.annotation.gtf \
   /wehisan/home/allstaff/d/dong.x/annotation/Mouse/mm10/mm10.fa -g

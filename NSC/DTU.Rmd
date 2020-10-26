@@ -362,3 +362,8 @@ pdf("plots/genePisd.pdf", width = 10, height = 5)
 plotTracks(list(gtrack, tr_Pisd), transcriptAnnotation="transcript", lwd = 1, lwd.grid = 1)
 dev.off()
 ``` 
+
+```{r}
+save.image("DTU.RData")
+```
+

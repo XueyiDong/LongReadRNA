@@ -200,16 +200,16 @@ cor(tt$length, tt$AveExpr)
 sm <- which(efit$genes$SYMBOL=="Smchd1")
 imprinted <- which(efit$genes$SYMBOL %in% c("Ndn", "Mkrn3", "Peg12"))
 pdf("plots/md.pdf", height = 5, width = 8)
-  plotMD(efit, status=dt, column=2, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA,
+  plotMD(efit, status=dt[,2], column=2, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA,
          cex.lab = 1.5, cex.axis = 1.5)
   # highlight smchd1
-  points(efit$Amean[sm], efit$coefficients[sm, 1], col = "green", pch = 16, cex = 1)
-  points(efit$Amean[imprinted], efit$coefficients[imprinted, 1], col = "orange", pch = 16, cex = 1)
+  points(efit$Amean[sm], efit$coefficients[sm, 2], col = "forestgreen", pch = 17, cex = 1.5)
+  points(efit$Amean[imprinted], efit$coefficients[imprinted, 2], col = "goldenrod", pch = 15, cex = 1.2)
   legend("topright", legend = c("Imprinted", "Up", "NotSig", "Down", "Smchd1"),
-         col = c("orange","red", "black", "blue", "green"),
+         col = c("goldenrod","red", "black", "blue", "forestgreen"),
          cex = 1.2, 
-         pch = c(16, 16, 16, 16, 16),
-         pt.cex = c(1, 1, 0.3, 1, 1))
+         pch = c(15, 16, 16, 16, 17),
+         pt.cex = c(1.2, 1, 0.3, 1, 1.5))
 dev.off()
 ```
 

@@ -14,6 +14,7 @@ mkdir -p ./results/rebasecall/minimap2_mm10
 
 
 for sample in barcode07 barcode{10..13} barcode{15..17} 
+# for sample in barcode10
 do minimap2 -ax splice -uf -k14 --junc-bed  /wehisan/home/allstaff/d/dong.x/annotation/Mouse/gencode.junction.bed /wehisan/home/allstaff/d/dong.x/annotation/Mouse/mm10/mm10.fa ./data/rebasecall/pass/merged/used/$sample.fq.gz | samtools view -b | samtools sort > ./results/rebasecall/minimap2_mm10/$sample.sorted.bam
 samtools index ./results/rebasecall/minimap2_mm10/$sample.sorted.bam $sample.sorted.bam.bai
 done
