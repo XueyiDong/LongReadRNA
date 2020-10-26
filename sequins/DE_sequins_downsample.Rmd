@@ -1,0 +1,256 @@
+---
+title: "DE analysis of downsampled sequins ONT data"
+author: "Xueyi Dong"
+date: "09/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(Rsubread)
+library(limma)
+library(edgeR)
+library(ggplot2)
+```
+
+## Counting
+
+```{r}
+bams <- paste0("./downsample/barcode0", 1:4, ".sorted.bam")
+gff <- "/wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf"
+fc2 <- featureCounts(bams, annot.ext=gff, isGTFAnnotationFile = TRUE, isLongRead = TRUE, primaryOnly=TRUE)
+saveRDS(fc2, "counts_downsample.RDS")
+```
+
+```{r}
+fc2$stat
+```
+
+## DE analysis
+
+```{r}
+y <- DGEList(counts = fc2$counts)
+y$samples$group <- c("A", "A", "B", "B")
+
+filter <- filterByExpr(y)
+summary(filter)
+y <- y[filter, keep.lib.sizes=FALSE]
+y <- calcNormFactors(y)
+lcpm <- cpm(y, log=TRUE)
+
+```
+
+7 genes were filtered out. 69 remained.
+
+```{r}
+# pdf("plots_downsample/MDS_sequins.pdf", height = 5, width = 8)
+plotMDS(lcpm, labels = c("mixA1", "mixA2", "mixB1", "mixB2"), col = c("#071535", "#071535", "#D12300", "#D12300"))
+# dev.off()
+```
+
+```{r}
+design <- model.matrix(~y$samples$group)
+colnames(design) <- sub("y\\$samples\\$group", "", colnames(design))
+colnames(design) <- sub("y\\$samples\\$", "", colnames(design))
+pdf("plots_downsample/voom_sequins.pdf", height = 4)
+v2 <- voomWithQualityWeights(y, design=design, plot=TRUE)
+dev.off()
+```
+
+The voom trend looks OK.
+
+```{r}
+fit2 <- lmFit(v2, design = design)
+efit2 <- eBayes(fit2)
+dt2 <- decideTests(efit2)
+summary(dt2)
+```
+
+18 down and 17 up in downsampled.
+21 down and 18 up in not downsampled.
+
+
+```{r}
+pdf("plots_downsample/MD_sequins.pdf", height = 5, width = 8)
+plotMD(efit2, status=dt2[,2], column = 2, values=c(1,-1), hl.col=c("red", "blue"),
+       main = "mix B vs A")
+dev.off()
+```
+
+
+```{r}
+tt2 <- topTable(efit2, coef=2, number=Inf)
+anno <- read.table("/wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_genes_2.4.tsv", header = TRUE, stringsAsFactors = FALSE)
+anno$logFC <- log(anno$MIX_B / anno$MIX_A)
+tt2$logFC_expected <- anno$logFC[match(rownames(tt2), anno$NAME)]
+tt2$LENGTH <- anno$LENGTH[match(rownames(tt2), anno$NAME)]
+cor(tt2$logFC, tt2$logFC_expected)
+lfc.lm2 <-lm(tt2$logFC ~ tt2$logFC_expected)
+summary(lfc.lm2)
+
+pdf("plots_downsample/logfc.pdf", height = 5, width = 8)
+ggplot(tt2, aes(x = logFC_expected, y = logFC)) +
+  geom_point() +
+  theme_bw() +
+  theme(text = element_text(size = 20), 
+        legend.text = element_text(size=16)) +
+  labs(x = "Expected logFC", y="Estimated logFC") +
+  scale_x_continuous(breaks = seq(-4, 4, 2), limits = c(-4.1, 4.1)) +
+  scale_y_continuous(breaks = seq(-4, 4, 2), limits = c(-4.4, 5.6)) +
+  geom_smooth(method="lm") +
+  annotate(geom = "text", x = 3, y = 5.3, label = paste("Adj R2 = ",round(summary(lfc.lm2)$adj.r.squared, 2)), size = 7)
+dev.off()
+
+# calculate r square
+
+```
+
+logFC showed good correlation. GOOOOOD!
+
+
+Length vs average expression
+```{r}
+pdf("plots_downsample/lengthAveExpSequins.pdf")
+ggplot(tt2, aes(x = LENGTH, y = AveExpr)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Gene length", y = "Average expression (log-CPM)") +
+  scale_x_continuous(trans = "log10") +
+  theme(text = element_text(size = 16))
+dev.off()
+
+cor(tt2$AveExpr, tt2$LENGTH)
+# correlation of gene length and expected expression
+cor(anno$LENGTH, ave(anno$MIX_A, anno$MIX_B))
+```
+
+```{r}
+table(prediction=(tt2$adj.P.Val<0.05), trueLabel=tt2$logFC_expected!=0)
+```
+
+Calculate FDR and TPR
+
+```{r}
+tt2$sig <- tt2$adj.P.Val<0.05
+tt2$DE <- abs(tt2$logFC_expected) > 0.0001
+
+FDR = sum(tt2$sig &!(tt2$DE)) / sum(tt2$sig)
+
+TPR = sum(tt2$DE & tt2$sig) / sum(tt2$DE)
+```
+
+
+```{r}
+# 
+#         ==========     _____ _    _ ____  _____  ______          _____  
+#         =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+#           =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+#             ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+#               ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+#         ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+#        Rsubread 1.34.7
+# 
+# //========================== featureCounts setting ===========================\\
+# ||                                                                            ||
+# ||             Input files : 4 SAM files                                      ||
+# ||                           o barcode01_clean_labeled.sam                    ||
+# ||                           o barcode02_clean_labeled.sam                    ||
+# ||                           o barcode03_clean_labeled.sam                    ||
+# ||                           o barcode04_clean_labeled.sam                    ||
+# ||                                                                            ||
+# ||              Annotation : rnasequin_annotation_2.4.gtf (GTF)               ||
+# ||      Dir for temp files : .                                                ||
+# ||                 Threads : 1                                                ||
+# ||                   Level : meta-feature level                               ||
+# ||              Paired-end : no                                               ||
+# ||      Multimapping reads : counted                                          ||
+# ||     Multiple alignments : primary alignment only                           ||
+# || Multi-overlapping reads : not counted                                      ||
+# ||   Min overlapping bases : 1                                                ||
+# ||          Long read mode : yes                                              ||
+# ||                                                                            ||
+# \\============================================================================//
+# 
+# //================================= Running ==================================\\
+# ||                                                                            ||
+# || Load annotation file rnasequin_annotation_2.4.gtf ...                      ||
+# ||    Features : 1175                                                         ||
+# ||    Meta-features : 76                                                      ||
+# ||    Chromosomes/contigs : 1                                                 ||
+# ||                                                                            ||
+# || Process SAM file barcode01_clean_labeled.sam...                            ||
+# ||    Single-end reads are included.                                          ||
+# ||    Total alignments : 2164531                                              ||
+# ||    Successfully assigned alignments : 2051593 (94.8%)                      ||
+# ||    Running time : 0.20 minutes                                             ||
+# ||                                                                            ||
+# || Process SAM file barcode02_clean_labeled.sam...                            ||
+# ||    Single-end reads are included.                                          ||
+# ||    Total alignments : 853184                                               ||
+# ||    Successfully assigned alignments : 817567 (95.8%)                       ||
+# ||    Running time : 0.09 minutes                                             ||
+# ||                                                                            ||
+# || Process SAM file barcode03_clean_labeled.sam...                            ||
+# ||    Single-end reads are included.                                          ||
+# ||    Total alignments : 1687593                                              ||
+# ||    Successfully assigned alignments : 1406938 (83.4%)                      ||
+# ||    Running time : 0.17 minutes                                             ||
+# ||                                                                            ||
+# || Process SAM file barcode04_clean_labeled.sam...                            ||
+# ||    Single-end reads are included.                                          ||
+# ||    Total alignments : 2531731                                              ||
+# ||    Successfully assigned alignments : 2084928 (82.4%)                      ||
+# ||    Running time : 0.24 minutes                                             ||
+# ||                                                                            ||
+# ||                                                                            ||
+# \\============================================================================//
+```
+
+```{r}
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,1]
+), file = "geo/sequinsMixA1.tsv",
+sep = "\t", row.names = FALSE)
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,2]
+), file = "geo/sequinsMixA2.tsv",
+sep = "\t", row.names = FALSE)
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,3]
+), file = "geo/sequinsMixB1.tsv",
+sep = "\t", row.names = FALSE)
+write.table(data.frame(
+  GeneID = fc$annotation$GeneID,
+  Length = fc$annotation$Length,
+  count = fc$counts[,4]
+), file = "geo/sequinsMixB2.tsv",
+sep = "\t", row.names = FALSE)
+```
+
+```{r}
+read.num <- data.frame(
+  category = factor(c("raw reads", "demultiplexed reads", "gene counts"), levels = c("raw reads", "demultiplexed reads", "gene counts")),
+  Number = c(7349818, 7053814, 5684786)
+)
+library(scales)
+pdf("readnumsequins.pdf")
+ggplot(read.num, aes(x=category, y=Number)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  theme(text = element_text(size = 16)) +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  labs(x="")+
+  geom_text(aes(label=Number), position = position_stack(vjust = 0.5), colour="white")
+dev.off()
+```
