@@ -11,48 +11,49 @@ library(Hmisc)
 
 dir_bam <- "/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/results/rebasecall/minimap2_mm10"
 bams <- paste0("barcode",c("07", 10:13, 15:17),  ".sorted.bam")
-for (i in 3:8){
-  cat("Reading", bams[i], "\n")
-  bam1 <- suppressWarnings(readBam(file.path(dir_bam, bams[i])))
-  cat("Making read DF\n")
-  readDF <- makeReadDf(bam1)
-  cat("Making summary list\n")
-  summ <- makeSummaryList(bam1)
-  saveRDS(readDF, file = file.path(dir_bam, paste0(bams[i], "readDF.RDS")))
-  saveRDS(summ, file=file.path(dir_bam, paste0(bams[i], ".summ.RDS")))
-}
 
-# read in RDS (no fresia)
+# for (i in 1:8){
+#   cat("Reading", bams[i], "\n")
+#   bam1 <- suppressWarnings(readBam(file.path(dir_bam, bams[i])))
+#   cat("Making read DF\n")
+#   readDF <- makeReadDf(bam1)
+#   cat("Making summary list\n")
+#   summ <- makeSummaryList(bam1)
+#   saveRDS(readDF, file = file.path(dir_bam, paste0(bams[i], ".readDF.RDS")))
+#   saveRDS(summ, file=file.path(dir_bam, paste0(bams[i], ".summ.RDS")))
+# }
 
-readDF <- lapply(c(1, 4, 5, 6, 7, 9, 10, 11), function(x){
-  readRDS(file.path(dir_bam, paste0(bams[x], "readDF.RDS")))})
-DF <- rbind(readDF[[1]], readDF[[2]], readDF[[3]], readDF[[4]],
-            readDF[[5]], readDF[[6]], readDF[[7]], readDF[[8]])
-DF$sample <- rep(c("1", "2", "3", "4", "1", "5", "6", "7"), 
-                 c(nrow(readDF[[1]]), nrow(readDF[[2]]), nrow(readDF[[3]]),
-                   nrow(readDF[[4]]), nrow(readDF[[5]]), nrow(readDF[[6]]),
-                   nrow(readDF[[7]]), nrow(readDF[[8]])))
-saveRDS(DF, file=file.path(dir_bam, "readDF.all.RDS"))
-rm(readDF)
+# read in RDS
 
-DF <- readRDS(file.path(dir_bam, "readDF.all.RDS"))
+# readDF <- lapply(1:8, function(x){
+#   readRDS(file.path(dir_bam, paste0(bams[x], ".readDF.RDS")))})
+# DF <- rbind(readDF[[1]], readDF[[2]], readDF[[3]], readDF[[4]],
+#             readDF[[5]], readDF[[6]], readDF[[7]], readDF[[8]])
+# DF$sample <- rep(c("1", "2", "3", "4", "1", "5", "6", "7"),
+#                  c(nrow(readDF[[1]]), nrow(readDF[[2]]), nrow(readDF[[3]]),
+#                    nrow(readDF[[4]]), nrow(readDF[[5]]), nrow(readDF[[6]]),
+#                    nrow(readDF[[7]]), nrow(readDF[[8]])))
+# saveRDS(DF, file=file.path(dir_bam, "readDF.all.RDS"))
+# rm(readDF)
+
+
 
 
 # read GFF and calculate tx len
 
-gff1 <- "/wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT/run1/isoform_annotated.gff3"
-gff2 <- "/wehisan/home/allstaff/d/dong.x/annotation/Mouse/gencode.vM23.annotation.gff3"
-anno_FLTSA <- makeTxDbFromGFF(gff1, organism = "Mus musculus")
-anno_GENCODE <- makeTxDbFromGFF(gff2, organism = "Mus musculus")
-tl_FLTSA <- transcriptLengths(anno_FLTSA)
-tl_GENCODE <- transcriptLengths(anno_GENCODE)
-tl <- rbind(tl_FLTSA, tl_GENCODE)
-tl <- tl[!duplicated(tl$tx_name),]
-save(tl, file = "/wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT/run1//rdata/tl.RData")
-
-load("/wehisan/general/old-prkfs2/disk503/GP_Transfer/Smchd1/long/scFLT/run1/rdata/tl.RData")
+# gff1 <- "/stornext/Home/data/allstaff/d/dong.x/analysis/2020/smchd1/NSC/flames/results/isoform_annotated.filtered.gff3"
+# gff2 <- "/wehisan/home/allstaff/d/dong.x/annotation/Mouse/gencode.vM23.annotation.gff3"
+# anno_FLAMES <- makeTxDbFromGFF(gff1, organism = "Mus musculus")
+# anno_GENCODE <- makeTxDbFromGFF(gff2, organism = "Mus musculus")
+# tl_FLAMES <- transcriptLengths(anno_FLAMES)
+# tl_GENCODE <- transcriptLengths(anno_GENCODE)
+# tl <- rbind(tl_FLAMES, tl_GENCODE)
+# tl <- tl[!duplicated(tl$tx_name),]
+# saveRDS(tl, "transcriptLengths.RDS")
 
 
+DF <- readRDS(file.path(dir_bam, "readDF.all.RDS"))
+tl <- readRDS("transcriptLengths.RDS")
 m <- match(DF$seqnames, tl$tx_name)
 DF$tx_len <- tl$tx_len[m]
 # readDF <- na.omit(readDF)

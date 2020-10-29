@@ -8,7 +8,9 @@ library(ggplot2)
 
 ## --------------------------------------------------------------------------
 qcdata <- readRDS("./summaryInfo.RDS")
-
+qcdata <- as.data.frame(qcdata, stringsAsFactors = FALSE)
+qcdata$Read_length <- as.numeric(qcdata$Read_length)
+qcdata$QScore <- as.numeric(qcdata$Qscore)
 
 ## --------------------------------------------------------------------------
 pdf("plots/length.pdf", height = 5)
@@ -29,6 +31,7 @@ dev.off()
 ## --------------------------------------------------------------------------
 cutoff <- quantile(qcdata$Read_length, 0.99)
 cat("cutoff (read length 0.99 quantile): ", cutoff, "\n")
+# 5843
 
 
 
@@ -52,8 +55,11 @@ dev.off()
 
 ## --------------------------------------------------------------------------
 cat("1/3: ", quantile(qcdata$Read_length, 1/3))
+#502
 cat("2/3: ", quantile(qcdata$Read_length, 2/3))
+# 1073
 cat("0.95: ", quantile(qcdata$Read_length, 0.95))
+# 3053
 
 
 ## --------------------------------------------------------------------------
