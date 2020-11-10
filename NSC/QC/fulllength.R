@@ -52,8 +52,9 @@ bams <- paste0("barcode",c("07", 10:13, 15:17),  ".sorted.bam")
 # saveRDS(tl, "transcriptLengths.RDS")
 
 
-DF <- readRDS(file.path(dir_bam, "readDF.all.RDS"))
-tl <- readRDS("transcriptLengths.RDS")
+# DF <- readRDS(file.path(dir_bam, "readDF.all.RDS"))
+DF < -readRDS("../flames/results/readDF.RDS")
+tl <- readRDS("./transcriptLengths.RDS")
 m <- match(DF$seqnames, tl$tx_name)
 DF$tx_len <- tl$tx_len[m]
 # readDF <- na.omit(readDF)

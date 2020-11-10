@@ -49,6 +49,35 @@ plotMDS(lcpm, labels = c("mixA1", "mixA2", "mixB1", "mixB2"), col = c("#071535",
 dev.off()
 ```
 
+Plot CPM estimate vs expect
+
+```{r}
+cpm <- cpm(x)
+m <- match(anno$NAME, rownames(cpm))
+annoData <- cbind(anno, cpm[m,])
+colnames(annoData)[6:9] <- paste0("mix", c("A1", "A2", "B1", "B2"))
+annoData <- data.table::melt(annoData, id.vars = 1:5)
+annoData$exp <-annoData$MIX_A
+annoData$exp[annoData$variable %in% c("mixB1", "mixB2")] <- annoData$MIX_B[annoData$variable %in% c("mixB1", "mixB2")]
+colnames(annoData)[6] <- "sample"
+annoData$sample <- factor(annoData$sample, levels = c("mixA1", "mixA2", "mixB1", "mixB2"))
+cor(annoData$exp, annoData$value, use = "complete.obs")
+
+library(ggplot2)
+library(scales)
+pdf("plots/GeneCPMvsAnno.pdf", height = 5, width = 8)
+ggplot(annoData, aes(x=exp, y=value, colour=sample)) +
+  geom_point(position = position_jitterdodge(dodge.width = 0.15)) +
+  theme_bw() +
+  scale_x_continuous(trans = "log10", labels = comma) +
+  scale_y_continuous(trans = "log10", labels=comma, limits=c(0.5, 180000)) +
+  labs(x = "Expected abundance", y = "CPM") +
+  scale_colour_manual(values = c("#869700", "#D12300", "#071535", "#54B5E1"))+
+  theme(text = element_text(size = 20)) +
+    annotate(geom="text", x=300, y=160000, label=expression(paste(rho, "=0.84")), size=8) 
+dev.off()
+```
+
 ```{r}
 design <- model.matrix(~x$samples$group)
 colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))

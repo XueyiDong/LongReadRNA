@@ -7,6 +7,8 @@ library(data.table)
 library(GenomicFeatures)
 library(Hmisc)
 
+
+
 bam <- "../flames/results/realign2transcript.bam"
 
 # for (i in 1:8){

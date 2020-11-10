@@ -13,60 +13,69 @@ qcdata$Read_length <- as.numeric(qcdata$Read_length)
 qcdata$QScore <- as.numeric(qcdata$Qscore)
 
 ## --------------------------------------------------------------------------
-pdf("plots/length.pdf", height = 5)
-ggplot(qcdata, aes(x = Read_length )) +
-  geom_density() +
-  theme_bw() +
-  coord_trans(x = "log10")
-dev.off()
-
-pdf("plots/lengthSample.pdf", height = 5)
-ggplot(qcdata, aes(x = Read_length, colour=Barcode )) +
-  geom_density() +
-  theme_bw() +
-  coord_trans(x = "log10")
-dev.off()
-
-
-## --------------------------------------------------------------------------
-cutoff <- quantile(qcdata$Read_length, 0.99)
-cat("cutoff (read length 0.99 quantile): ", cutoff, "\n")
-# 5843
-
-
-
-## --------------------------------------------------------------------------
-# pdf("lengthQscore.pdf", )
-# ggplot(qcdata, aes(x = Read_length, y = Qscore)) +
-#   geom_point() +
-#   xlim(NA, cutoff)
+# pdf("plots/length.pdf", height = 5)
+# ggplot(qcdata, aes(x = Read_length )) +
+#   geom_density() +
+#   theme_bw() +
+#   coord_trans(x = "log10")
+# dev.off()
+# 
+# pdf("plots/lengthSample.pdf", height = 5)
+# ggplot(qcdata, aes(x = Read_length, colour=Barcode )) +
+#   geom_density() +
+#   theme_bw() +
+#   coord_trans(x = "log10")
+# dev.off()
+# 
+# 
+# ## --------------------------------------------------------------------------
+# cutoff <- quantile(qcdata$Read_length, 0.99)
+# cat("cutoff (read length 0.99 quantile): ", cutoff, "\n")
+# # 5843
+# 
+# 
+# 
+# ## --------------------------------------------------------------------------
+# # pdf("lengthQscore.pdf", )
+# # ggplot(qcdata, aes(x = Read_length, y = Qscore)) +
+# #   geom_point() +
+# #   xlim(NA, cutoff)
+# # dev.off()
+# 
+# 
+# ## --------------------------------------------------------------------------
+# pdf("plots/lengthpassfail.pdf", height = 4, width = 8)
+# qcdata$pass <- qcdata$Qscore > 7
+# ggplot(qcdata, aes(x = Read_length, fill = pass)) +
+#   geom_density(alpha = 0.4) +
+#   xlim(NA, cutoff) +
+#   theme_bw()
 # dev.off()
 
 
 ## --------------------------------------------------------------------------
-pdf("plots/lengthpassfail.pdf", height = 4, width = 8)
-qcdata$pass <- qcdata$Qscore > 7
-ggplot(qcdata, aes(x = Read_length, fill = pass)) +
-  geom_density(alpha = 0.4) +
-  xlim(NA, cutoff) +
-  theme_bw()
-dev.off()
-
-
-## --------------------------------------------------------------------------
-cat("1/3: ", quantile(qcdata$Read_length, 1/3))
+cutoff1 <- quantile(qcdata$Read_length, 1/3)
+cat("1/3: ", cutoff1, "\n")
 #502
-cat("2/3: ", quantile(qcdata$Read_length, 2/3))
+cutoff2 <- quantile(qcdata$Read_length, 2/3)
+cat("2/3: ", cutoff2, "\n")
 # 1073
-cat("0.95: ", quantile(qcdata$Read_length, 0.95))
+cutoff3 <- quantile(qcdata$Read_length, 0.95)
+cat("0.95: ", cutoff3, "\n")
 # 3053
 
 
 ## --------------------------------------------------------------------------
-qcdata$length <- "medium"
-qcdata$length[qcdata$Read_length < quantile(qcdata$Read_length, 1/3)] <- "short"
-qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 2/3)] <- "long"
-qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 0.95)] <- "extra long"
+# qcdata$length <- "medium"
+# qcdata$length[qcdata$Read_length < quantile(qcdata$Read_length, 1/3)] <- "short"
+# qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 2/3)] <- "long"
+# qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 0.95)] <- "extra long"
+maxLength = max(qcdata$Read_length)
+qcdata$length <- Hmisc::cut2(qcdata$Read_length, cuts = c(0, cutoff1, cutoff2,
+                                                          cutoff3, maxLength))
+qcdata$LengthGroup <- gsub(" ", "", qcdata$LengthGroup)
+qcdata$LengthGroup <- gsub(",", ", ", qcdata$LengthGroup)
+
 pdf("plots/lengthQualityviolin.pdf", height = 4, width = 8)
 ggplot(qcdata, aes(x = length, y = Qscore, fill = length, colour = length)) +
   geom_violin(alpha = 0.4) +
