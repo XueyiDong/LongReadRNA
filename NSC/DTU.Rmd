@@ -218,14 +218,27 @@ Only gene Pisd is significant. Let's plot proportions for Pisd.
 pdf("plots/DTUPropPisd.pdf", height = 6, width =9)
 
 plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
-                plot_type = "ribbonplot", group_colors = col[1:2],
-                order_features = FALSE) + 
+               group_colors = col[1:2], plot_type = "barplot") + 
   ggtitle("Pisd") +
-  theme(legend.text=element_text(size=5))
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
+        text = element_text(size=12), 
+        legend.text=element_text(size=10))
   
-
 dev.off()
 ```
+
+emmm doesn't seems quite right...
+
+```{r}
+saveRDS(d, file="./d.RDS")
+
+plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group") + 
+  ggtitle("Pisd") +
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
+        text = element_text(size=12), 
+        legend.text=element_text(size=10))
+```
+
 
 ## use diffSplice
 
@@ -319,14 +332,16 @@ head(ds.padj)
 ```
 
 
-Combine with results from Kelan's diffSplice results
+Combine with results from short read results.
+
+First, calculate the overlap of top N genes of diffSplice simes results
 
 ```{r}
-ts.short <- read.table("/wehisan/general/academic/seq_data/kelan/AGRF_CAGRF6583/diffSplice_WtvsSmchd1_allgenes_XD.txt", stringsAsFactors = FALSE, sep = "\t", header=TRUE)
+ts.short <- read.table("Chen_et_al_2015_PNAS/topSplice_simes.tsv", stringsAsFactors = FALSE, sep = "\t", header=TRUE)
 
 calcTopN <- function(tl, ts, n){
   num <- sapply(1:n, function(x){
-    length(intersect(tl[1:x, "ENTREZID"], ts[1:x, "EntrezID"]))
+    length(intersect(tl[1:x, "GeneID"], ts[1:x, "GeneID"]))
   }, simplify = TRUE)
   intTopN <- data.frame(
     number = 1:n,
@@ -336,8 +351,27 @@ calcTopN <- function(tl, ts, n){
 }
 
 top200 <- calcTopN(ts, ts.short, 200)
+ggplot(top200, aes(x=number, y=intersect)) +geom_line()
 ```
 
+Then, compare this of DRIMSeq gene-level results
+```{r}
+res.short <- read.table("Chen_et_al_2015_PNAS/drimseq_gene.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+m <- match(res.short$gene_id, res$gene_id)
+cor(res[m, "lr"], res.short$lr, use = "complete.obs")
+cor(res[m, "pvalue"], res.short$pvalue, use = "complete.obs")
+```
+
+not comparable
+
+and compare DRIMSeq estimated proportion
+```{r}
+proportions.short <- read.table("Chen_et_al_2015_PNAS/drimseq_proportion.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+# only compare wt proportion
+m <- match(proportions.short$feature_id, proportions(d)$feature_id)
+cor(proportions(d)[m, 3], proportions.short$X113_C26VPACXX_ATCACG, use = "complete.obs")
+smoothScatter(proportions(d)[m, 3], proportions.short$X113_C26VPACXX_ATCACG)
+```
 
 
 # Use Gviz to plot transcripts of DTU genes

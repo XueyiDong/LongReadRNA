@@ -10,7 +10,7 @@ library(ggplot2)
 qcdata <- readRDS("./summaryInfo.RDS")
 qcdata <- as.data.frame(qcdata, stringsAsFactors = FALSE)
 qcdata$Read_length <- as.numeric(qcdata$Read_length)
-qcdata$QScore <- as.numeric(qcdata$Qscore)
+qcdata$Qscore <- as.numeric(qcdata$Qscore)
 
 ## --------------------------------------------------------------------------
 # pdf("plots/length.pdf", height = 5)
@@ -52,50 +52,51 @@ qcdata$QScore <- as.numeric(qcdata$Qscore)
 #   theme_bw()
 # dev.off()
 
+# 
+# ## --------------------------------------------------------------------------
+# cutoff1 <- quantile(qcdata$Read_length, 1/3)
+# cat("1/3: ", cutoff1, "\n")
+# #502
+# cutoff2 <- quantile(qcdata$Read_length, 2/3)
+# cat("2/3: ", cutoff2, "\n")
+# # 1073
+# cutoff3 <- quantile(qcdata$Read_length, 0.95)
+# cat("0.95: ", cutoff3, "\n")
+# # 3053
+# 
+# 
+# ## --------------------------------------------------------------------------
+# # qcdata$length <- "medium"
+# # qcdata$length[qcdata$Read_length < quantile(qcdata$Read_length, 1/3)] <- "short"
+# # qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 2/3)] <- "long"
+# # qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 0.95)] <- "extra long"
+# maxLength = max(qcdata$Read_length)
+# qcdata$length <- Hmisc::cut2(qcdata$Read_length, cuts = c(0, cutoff1, cutoff2,
+#                                                           cutoff3, maxLength))
+# qcdata$LengthGroup <- gsub(" ", "", qcdata$LengthGroup)
+# qcdata$LengthGroup <- gsub(",", ", ", qcdata$LengthGroup)
+# 
+# pdf("plots/lengthQualityviolin.pdf", height = 4, width = 8)
+# ggplot(qcdata, aes(x = length, y = Qscore, fill = length, colour = length)) +
+#   geom_violin(alpha = 0.4) +
+#   theme_bw() +
+#   theme(text = element_text(size=20))
+# dev.off()
+
 
 ## --------------------------------------------------------------------------
-cutoff1 <- quantile(qcdata$Read_length, 1/3)
-cat("1/3: ", cutoff1, "\n")
-#502
-cutoff2 <- quantile(qcdata$Read_length, 2/3)
-cat("2/3: ", cutoff2, "\n")
-# 1073
-cutoff3 <- quantile(qcdata$Read_length, 0.95)
-cat("0.95: ", cutoff3, "\n")
-# 3053
-
-
-## --------------------------------------------------------------------------
-# qcdata$length <- "medium"
-# qcdata$length[qcdata$Read_length < quantile(qcdata$Read_length, 1/3)] <- "short"
-# qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 2/3)] <- "long"
-# qcdata$length[qcdata$Read_length > quantile(qcdata$Read_length, 0.95)] <- "extra long"
 maxLength = max(qcdata$Read_length)
-qcdata$length <- Hmisc::cut2(qcdata$Read_length, cuts = c(0, cutoff1, cutoff2,
-                                                          cutoff3, maxLength))
-qcdata$LengthGroup <- gsub(" ", "", qcdata$LengthGroup)
-qcdata$LengthGroup <- gsub(",", ", ", qcdata$LengthGroup)
-
-pdf("plots/lengthQualityviolin.pdf", height = 4, width = 8)
-ggplot(qcdata, aes(x = length, y = Qscore, fill = length, colour = length)) +
-  geom_violin(alpha = 0.4) +
-  theme_bw() +
-  theme(text = element_text(size=20))
-dev.off()
-
-
-## --------------------------------------------------------------------------
-maxLength = max(qcdata$Read_length)
+maxLength
 qcdata$LengthGroup <- Hmisc::cut2(qcdata$Read_length, cuts = c(0, 500, 1000,
                                                      3000, maxLength))
 qcdata$LengthGroup <- gsub(" ", "", qcdata$LengthGroup)
 qcdata$LengthGroup <- gsub(",", ", ", qcdata$LengthGroup)
 
 qcdata$LengthGroup <- factor(qcdata$LengthGroup, levels = c(
-  "[0, 500)", "[500, 1000)", "[1000, 3000)", "[3000, 1823562]"
+  "[0, 500)", "[500, 1000)", "[1000, 3000)", "[3000, 1353320]"
 ))
 
-pdf("plots/lengthGroupQualityViolin.pdf", height = 4, width = 8)
+pdf("plots/lengthQualityViolin.pdf", height = 4, width = 8)
 ggplot(qcdata, aes(x=LengthGroup, y=Qscore, fill=LengthGroup, colour = LengthGroup)) +
   geom_violin(alpha = 0.4) +
   theme_bw() +

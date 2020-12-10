@@ -9,7 +9,7 @@ library(Hmisc)
 
 # read and calculate, save to RDS
 
-dir_bam <- "/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/results/rebasecall/minimap2_mm10"
+dir_bam <- "/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/results/rebasecall/minimap2_FLAMES_transcript"
 bams <- paste0("barcode",c("07", 10:13, 15:17),  ".sorted.bam")
 
 # for (i in 1:8){

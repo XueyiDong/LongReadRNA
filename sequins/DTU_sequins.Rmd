@@ -405,9 +405,6 @@ ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
 dev.off()
 ```
 
-```{r}
-
-```
  
 
 
@@ -486,8 +483,63 @@ ggplot(ts.tx, aes(x=logFC, y=FDR)) +
 ```
 
 
-
 ```{r}
 save.image("DTUsequins.RData")
 ```
 
+## Compare results with Illumina
+
+Combine with results from short read results.
+
+First, calculate the overlap of top N genes of diffSplice simes results
+
+```{r}
+ts.short <- read.table("illumina/topSplice_simes.tsv", stringsAsFactors = FALSE, sep = "\t", header=TRUE)
+
+calcTopN <- function(tl, ts, n){
+  num <- sapply(1:n, function(x){
+    length(intersect(tl[1:x, "GeneID"], ts[1:x, "GeneID"]))
+  }, simplify = TRUE)
+  intTopN <- data.frame(
+    number = 1:n,
+    intersect = num
+  )
+  return(intTopN)
+}
+
+top47 <- calcTopN(ts, ts.short, 47)
+ggplot(top47, aes(x=number, y=intersect)) + geom_line() +
+  geom_abline(colour="grey")
+```
+
+wow, nice!
+
+
+Then, compare this of DRIMSeq gene-level results
+```{r}
+res.short <- read.table("illumina/drimseq_gene.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+m <- match(res.short$gene_id, res$gene_id)
+cor(res[m, "lr"], res.short$lr, use = "complete.obs")
+cor(res[m, "pvalue"], res.short$pvalue, use = "complete.obs")
+```
+
+not comparable
+
+and compare DRIMSeq estimated proportion
+```{r}
+proportions.short <- read.table("illumina/drimseq_proportion.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+# only compare wt proportion
+m <- match(proportions.short$feature_id, proportions(d)$feature_id)
+cor(proportions(d)[m, 3], proportions.short$X6.HCC.1_S6, use = "complete.obs")
+plot(proportions(d)[m, 3], proportions.short$X6.HCC.1_S6)
+```
+
+Compare long and short read DRIMSeq proportions to annotated proportions
+```{r}
+
+```
+
+
+
+and also need to do a count vs anno plot for short read.
+DTU genes venn diagram for long vs short vs downsample?
