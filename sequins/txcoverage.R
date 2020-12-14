@@ -11,17 +11,17 @@ library(Hmisc)
 
 dir_bam <- "/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/flames/realign2transcript.bam"
 
-bam1 <- suppressWarnings(readBam(dir_bam))
-readDF <- makeReadDf(bam1)
-summ <- makeSummaryList(bam1)
-saveRDS(readDF, file = "sequins.readDF.RDS")
-saveRDS(summ, file= "sequins.summ.RDS")
-saveRDS(bam1, file= "bam.RDS")
-rm(bam1)
-# readDF <- readRDS("sequins.readDF.RDS")
+# bam1 <- suppressWarnings(readBam(dir_bam))
+# readDF <- makeReadDf(bam1)
+# summ <- makeSummaryList(bam1)
+# saveRDS(readDF, file = "sequins.readDF.RDS")
+# saveRDS(summ, file= "sequins.summ.RDS")
+# saveRDS(bam1, file= "bam.RDS")
+# rm(bam1)
+readDF <- readRDS("sequins.readDF.RDS")
 
 # attach tx len from annotation to readDF
-
+anno <- read.delim("/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/annotations/rnasequin_isoforms_2.4.tsv", sep = "\t", stringsAsFactors = FALSE)
 readDF$tx_len <- anno$LENGTH[match(readDF$seqnames, anno$NAME)]
 
 # remove 'novel' isoforms
@@ -37,7 +37,7 @@ readDF$covFraction <- readDF$width / readDF$tx_len
 # DF$group[DF$sample %in% c("2", "3", "7")] <- "Smchd1"
 
 
-pdf("fullLengthViolinLen.pdf", height = 5, width = 8)
+pdf("plots/fullLengthViolinLen.pdf", height = 5, width = 8)
 give.n <- function(x){
   return(c(y = 0.98, label = length(x))) 
 }
@@ -49,7 +49,7 @@ ggplot(readDF, aes(x=txLengthGroup, y=covFraction, fill=txLengthGroup)) +
   stat_summary(fun.data = give.n, geom = "text", vjust = -1)
 dev.off()
 
-pdf("fullLengthBoxLen.pdf", height = 5, width = 8)
+pdf("plots/fullLengthBoxLen.pdf", height = 5, width = 8)
 give.n <- function(x){
   return(c(y = 0.98, label = length(x))) 
 }
@@ -62,7 +62,7 @@ ggplot(readDF, aes(x=txLengthGroup, y=covFraction, fill=txLengthGroup)) +
 dev.off()
 
 library(viridis)
-pdf("mappedVsTxLen.pdf")
+pdf("plots/mappedVsTxLen.pdf")
 smoothScatter(readDF$tx_len, readDF$width, 
               xlab = "transcript length",
               ylab = "mapped length",
@@ -80,16 +80,9 @@ dev.off()
 
 # thought: normal scatter plot, colour by cov frection. Problem: too many dots. may need some single cell package to solve.
 
-# look into why some cov fraction > 1
-
-covFracLargerThan1 <- DF[DF$covFraction>1, ]
-head(covFracLargerThan1)
-dim(covFracLargerThan1)
-length(unique(covFracLargerThan1$read))
-length(unique(covFracLargerThan1$seqnames))
 
 # make alternative plot
-pdf("txLenCovFrac.pdf", height = 5, width = 8)
+pdf("plots/txLenCovFrac.pdf", height = 5, width = 8)
 ggplot(readDF, aes(x=tx_len, y=covFraction)) +
   stat_binhex(binwidth = c(0.03, 0.1)) +
   theme_bw() +
@@ -125,7 +118,7 @@ ggplot(txStat, aes(x=tx_len, y=fl90, size=log_count))+
   scale_x_continuous(trans = "log10") +
   geom_point()
 
-pdf("txLenFL.pdf", height = 5, width = 8)
+pdf("plots/txLenFL.pdf", height = 5, width = 8)
 ggplot(txStat, aes(x=tx_len, y=fl95, colour = log_count))+
   scale_x_continuous(trans = "log10") +
   geom_point() +
@@ -138,7 +131,7 @@ dev.off()
 
 readDF$alignedFraction <- readDF$alignedLength / readDF$readLength
 
-pdf("alignCov.pdf")
+pdf("plots/alignCov.pdf")
 ggplot(readDF, aes(x=alignedFraction, y=covFraction)) +
   stat_binhex()+
   scale_fill_viridis(direction = -1, option="A")
@@ -159,7 +152,7 @@ smoothScatter(readDF$tx_len, readDF$covFraction, log="x")
 
 readDF$isFullLength <- readDF$covFraction >= 0.95
 
-pdf("AlignFL.pdf", height = 5, width = 8)
+pdf("plots/AlignFL.pdf", height = 5, width = 8)
 ggplot(readDF, aes(x=isFullLength, y=alignedFraction, fill=isFullLength)) +
   geom_violin() +
   theme_bw() +
