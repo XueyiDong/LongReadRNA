@@ -8,7 +8,11 @@ library(ggplot2)
 
 ## --------------------------------------------------------------------------
 qcdata <- readRDS("./summaryInfo.RDS")
+qcdata2 <- readRDS("./summaryInfo2.RDS")
 qcdata <- as.data.frame(qcdata, stringsAsFactors = FALSE)
+qcdata2 <- as.data.frame(qcdata2, stringsAsFactors = FALSE)
+qcdata <- rbind(qcdata, qcdata2)
+rm(qcdata2)
 qcdata$Read_length <- as.numeric(qcdata$Read_length)
 qcdata$Qscore <- as.numeric(qcdata$Qscore)
 

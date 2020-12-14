@@ -8,4 +8,5 @@
 
 module load R
 
+Rscript prepare_QCplots.R
 Rscript QCplots.R
