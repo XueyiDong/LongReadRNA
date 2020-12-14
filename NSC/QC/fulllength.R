@@ -10,8 +10,9 @@ library(Hmisc)
 # read and calculate, save to RDS
 
 dir_bam <- "/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/results/rebasecall/minimap2_FLAMES_transcript"
-bams <- paste0("barcode",c("07", 10:13, 15:17),  ".sorted.bam")
+bams <- paste0("barcode",c("07", 10:13, 15:17))
 
+# make readDF
 # for (i in 1:8){
 #   cat("Reading", bams[i], "\n")
 #   bam1 <- suppressWarnings(readBam(file.path(dir_bam, bams[i])))
@@ -25,16 +26,16 @@ bams <- paste0("barcode",c("07", 10:13, 15:17),  ".sorted.bam")
 
 # read in RDS
 
-# readDF <- lapply(1:8, function(x){
-#   readRDS(file.path(dir_bam, paste0(bams[x], ".readDF.RDS")))})
-# DF <- rbind(readDF[[1]], readDF[[2]], readDF[[3]], readDF[[4]],
-#             readDF[[5]], readDF[[6]], readDF[[7]], readDF[[8]])
-# DF$sample <- rep(c("1", "2", "3", "4", "1", "5", "6", "7"),
-#                  c(nrow(readDF[[1]]), nrow(readDF[[2]]), nrow(readDF[[3]]),
-#                    nrow(readDF[[4]]), nrow(readDF[[5]]), nrow(readDF[[6]]),
-#                    nrow(readDF[[7]]), nrow(readDF[[8]])))
-# saveRDS(DF, file=file.path(dir_bam, "readDF.all.RDS"))
-# rm(readDF)
+readDF <- lapply(1:8, function(x){
+  readRDS(file.path(dir_bam, paste0(bams[x], ".readDF.RDS")))})
+DF <- rbind(readDF[[1]], readDF[[2]], readDF[[3]], readDF[[4]],
+            readDF[[5]], readDF[[6]], readDF[[7]], readDF[[8]])
+DF$sample <- rep(c("1", "2", "3", "4", "1", "5", "6", "7"),
+                 c(nrow(readDF[[1]]), nrow(readDF[[2]]), nrow(readDF[[3]]),
+                   nrow(readDF[[4]]), nrow(readDF[[5]]), nrow(readDF[[6]]),
+                   nrow(readDF[[7]]), nrow(readDF[[8]])))
+saveRDS(DF, file=file.path(dir_bam, "readDF.all.RDS"))
+rm(readDF)
 
 
 

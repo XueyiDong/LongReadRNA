@@ -1,4 +1,4 @@
-source("../run2/QC/Soneson/func.R")
+source("../NSC/QC/Soneson/func.R")
 library(ShortRead)
 library(GenomicAlignments)
 library(dplyr)
@@ -9,7 +9,7 @@ library(Hmisc)
 
 # read and calculate, save to RDS
 
-dir_bam <- "/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/FLTSA_output/realign2transcript.bam"
+dir_bam <- "/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/flames/realign2transcript.bam"
 
 bam1 <- suppressWarnings(readBam(dir_bam))
 readDF <- makeReadDf(bam1)
@@ -18,7 +18,8 @@ saveRDS(readDF, file = "sequins.readDF.RDS")
 saveRDS(summ, file= "sequins.summ.RDS")
 saveRDS(bam1, file= "bam.RDS")
 rm(bam1)
-readDF <- readRDS("sequins.readDF.RDS")
+# readDF <- readRDS("sequins.readDF.RDS")
+
 # attach tx len from annotation to readDF
 
 readDF$tx_len <- anno$LENGTH[match(readDF$seqnames, anno$NAME)]
