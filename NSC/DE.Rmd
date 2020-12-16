@@ -74,13 +74,15 @@ dev.off()
 ```{r}
 pdf("plots/libsize.pdf", height = 4, width = 8)
 library(ggplot2)
+library(scales)
 ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
   geom_bar(stat="identity") +
   scale_fill_brewer(palette = "Set2", direction = -1) +
   scale_x_discrete(limits = x$samples$sample, labels=1:7) +
   theme_bw() +
   theme(text = element_text(size=20)) +
-  labs(y = "Library size", x = "Sample") 
+  labs(y = "Library size", x = "Sample") +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))
 dev.off()
 ```
 
