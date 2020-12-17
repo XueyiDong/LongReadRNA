@@ -171,14 +171,19 @@ TPR = sum(tt$DE & tt$sig) / sum(tt$DE)
 Compare with short read
 ```{r}
 tt.short <-read.delim("illumina/topTable.txt", sep = "\t", stringsAsFactors = FALSE)
-tt$t.short <- tt.short$t[match(rownames(tt), rownames(tt.short)) ]
+tt$t.short <- tt.short$t[match(rownames(tt), rownames(tt.short))]
+                         
+t.lm <- lm(tt$t.short ~ tt$t)
+summary(t.lm)
 pdf("plots/t.pdf", height = 5, width = 8)
 ggplot(tt, aes(x = t, y = t.short))+
   geom_point() + 
   labs(x = "Long read t-statistic", y = "Short read t-statistic") +
   geom_smooth(method='lm', formula= y~x)+
-  theme_bw()+
-  theme(text = element_text(size = 16))
+  theme_bw() +
+  theme(text = element_text(size = 20), 
+        legend.text = element_text(size=16)) +
+  annotate(geom = "text", x = 13, y = 90, label = paste("Adj R2 = ",round(summary(t.lm)$adj.r.squared, 2)), size = 7)
 dev.off()
 ```
 
