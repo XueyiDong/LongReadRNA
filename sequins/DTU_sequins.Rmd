@@ -387,21 +387,24 @@ ggplot(na.omit(ds.all), aes(x=DTU, y=FDR, fill=test)) +
 
 ```{r}
 results.all <- rbind(res.all, ds.all)
-results.all$test <- factor(results.all$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript",
-                              "diffSplice_simes", "diffSplice_F", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript"))
+results.all$test <- factor(results.all$test, levels = c("DRIMSeq_gene", "DRIMSeq_stageR_gene","diffSplice_simes", "diffSplice_F", "diffSplice_stageR_gene", "DRIMSeq_feature", "DRIMSeq_stageR_transcript",
+                               "diffSplice_t", "diffSplice_stageR_transcript"))
+col_impression <- c("#D96A70", "#C68C81", "#303C24", "#476937", "#9FC675", "#8E3055", "#D5A2CB", "#3C5880", "#708FA6")
 
-pdf("plots/DTU_FDR.pdf", width = 8, height = 5)
+pdf("plots/DTU_FDR.pdf", width = 17, height = 5)
 ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
-  geom_boxplot(alpha=.4, outlier.shape = NA)+
-  geom_point(position = position_jitterdodge(jitter.height = .02), cex=.5, alpha = .5)+
+  geom_boxplot(alpha=.6, outlier.shape = NA)+
+  geom_point(position = position_jitterdodge(jitter.height = .02), cex=.7, alpha = .7)+
   facet_grid(.~level) +
   theme_bw() +
   # theme(axis.text.x = element_text(angle = 90)) +
-  theme(text = element_text(size=16), legend.text = element_text(size=10))+
+  theme(text = element_text(size=20), legend.text = element_text(size=14))+
   geom_hline(yintercept = 0.05, linetype="dashed") +
   labs(y = "Adjusted p-value", x="is DTU") +
-  scale_fill_brewer(palette = "Set1")+
-  scale_colour_brewer(palette = "Set1")
+  # scale_fill_brewer(palette = "Set1")+
+  # scale_colour_brewer(palette = "Set1")
+  scale_fill_manual(values = col_impression) +
+  scale_colour_manual(values = col_impression)
 dev.off()
 ```
 
