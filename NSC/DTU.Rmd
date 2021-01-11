@@ -33,6 +33,7 @@ colnames(counts)[1] <- "feature_id"
 counts$barcode07 <- counts$barcode07 + counts$barcode13
 BC13 <- which(colnames(counts)=="barcode13")
 counts <- counts[,-BC13]
+colnames(counts)[3:ncol(counts)] <- make.names(colnames(counts)[3:ncol(counts)])
 samples <- data.frame(sample_id = colnames(counts)[3:ncol(counts)], group=scBarcode$group[match(colnames(counts)[3:ncol(counts)], scBarcode$barcode)])
 ```
 

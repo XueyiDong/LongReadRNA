@@ -282,7 +282,7 @@ barcodeplot(efit$t[, 2], index=index.strict,
             gene.weights = gene.weights[index.strict],
             labels = c("WT", "Smchd1-null"),
             xlab = "Moderated t",
-            cex.lab = 1.5, cex.axis = 1.5, cex = 1.5)
+            cex.lab = 1.8, cex.axis = 2, cex = 1.5)
 dev.off()
 ```
 
