@@ -381,11 +381,13 @@ smoothScatter(proportions(d)[m, 3], proportions.short$X113_C26VPACXX_ATCACG)
 library(Gviz)
 library(GenomicFeatures)
 # library(biomaRt)
-# gff <- "../scFLT/run1/isoform_annotated.gff3"
-gff <- "../scFLT/run1/pisd.gff3"
+gff <- "./flames/results/isoform_annotated.filtered.gff3"
+# gff <- "../scFLT/run1/pisd.gff3"
 anno <- makeTxDbFromGFF(gff, organism = "Mus musculus")
 
-tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5")
+# tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5")
+tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5", 
+                           start = 32736314, end = 32785626)
 # ensembl <- biomaRt::useMart("ensembl")
 # datasets <- biomaRt::listDatasets(ensembl)
 # ensembl <- biomaRt::useDataset("mmusculus_gene_ensembl", mart=ensembl)
@@ -402,3 +404,9 @@ dev.off()
 save.image("DTU.RData")
 ```
 
+```{r}
+plotProportions(d, gene_id = "R2_53", group_variable = "group", plot_type = "barplot") + 
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
+        text = element_text(size=12), 
+        legend.text=element_text(size=10))
+```

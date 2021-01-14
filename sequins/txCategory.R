@@ -60,7 +60,8 @@ isoClass.flair$count <- rowSums(count.flair[, 2:5])[match(substring(isoClass.fla
 isoClass.talon$count <- rowSums(count.talon[, 12:15])[match(isoClass.talon$isoform, count.talon$annot_transcript_id)]
 
 isoClass <- rbind(isoClass.flames, isoClass.flair, isoClass.talon)
-isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "genic", "genic_intron", "intergenic", "fusion", "antisense"))
+isoClass$structural_category[isoClass$structural_category %in% c("genic", "genic_intron", "intergenic")] <- "genic/intergenic"
+isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "genic/intergenic", "fusion", "antisense"))
 # isoClass$method <- gsub("flames", "FLAMES", isoClass$method)
 
 library(RColorBrewer)
