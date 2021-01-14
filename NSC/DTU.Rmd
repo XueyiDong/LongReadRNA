@@ -168,17 +168,6 @@ write.table(res, "DTUres.tsv", sep = "\t", row.names = FALSE)
 library(RColorBrewer)
 library(ggplot2)
 col <- brewer.pal(3, "Set2")
-# top 20 genes
-pdf("plots/DTUProp.pdf", height = 6, width = 9)
-for (i in 1:5){
-  p <- plotProportions(d, gene_id = res$gene_id[i], group_variable = "group", 
-                       plot_type = "ribbonplot", group_colors = col[1:2]) + 
-    ggtitle(res$SYMBOL[i]) +
-    theme(legend.text=element_text(size=5))
-  print(p)
-}
-dev.off()
-
 ```
 
 
@@ -219,11 +208,11 @@ Only gene Pisd is significant. Let's plot proportions for Pisd.
 pdf("plots/DTUPropPisd.pdf", height = 6, width =9)
 
 plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
-               group_colors = col[1:2], plot_type = "barplot") + 
+               group_colors = col[1:2], plot_type = "boxplot1") + 
   ggtitle("Pisd") +
-  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
-        text = element_text(size=12), 
-        legend.text=element_text(size=10))
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 0.5), 
+        text = element_text(size=10), 
+        legend.text=element_text(size=10)) 
   
 dev.off()
 ```
@@ -402,11 +391,4 @@ dev.off()
 
 ```{r}
 save.image("DTU.RData")
-```
-
-```{r}
-plotProportions(d, gene_id = "R2_53", group_variable = "group", plot_type = "barplot") + 
-  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
-        text = element_text(size=12), 
-        legend.text=element_text(size=10))
 ```
