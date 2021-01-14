@@ -4,7 +4,8 @@ library(RColorBrewer)
 library(scales)
 
 isoClass <- read.delim("isoform_annotated.filtered_classification.txt", stringsAsFactors = FALSE)
-isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "genic", "genic_intron", "intergenic", "fusion", "antisense"))
+isoClass$structural_category[isoClass$structural_category %in% c("genic", "genic_intron", "intergenic")] <- "genic/intergenic"
+isoClass$structural_category <- factor(isoClass$structural_category, levels =c("full-splice_match", "incomplete-splice_match", "novel_in_catalog", "novel_not_in_catalog", "genic/intergenic", "fusion", "antisense"))
 
 col.category <- brewer.pal(nlevels(isoClass$structural_category), "Set1")
 
