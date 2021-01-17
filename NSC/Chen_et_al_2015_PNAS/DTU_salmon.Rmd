@@ -1,0 +1,231 @@
+---
+title: "DTU analysis for NSC short-read salmon counts"
+author: "Xueyi Dong"
+date: "23/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Organize transcript count data and annotation
+
+```{r}
+datadir="/wehisan/general/academic/seq_data/kelan/AGRF_CAGRF6583/salmon"
+samples <- c("113_C26VPACXX_ATCACG", "114_C26VPACXX_CGATGT", "11_C26VPACXX_GATCAG", "12_C26VPACXX_TAGCTT", "13_C26VPACXX_GGCTAC", "14_C26VPACXX_CTTGTA")
+quant <- file.path(datadir, samples, "quant.sf")
+library(tximport)
+txi <- tximport(quant, type="salmon", txOut=TRUE, countsFromAbundance = "scaledTPM")
+library(GenomicFeatures)
+gtf <- "../flames/results/isoform_annotated.filtered.gff3"
+txdb <- makeTxDbFromGFF(gtf)
+txdf <- select(txdb, keys(txdb, "GENEID"), "TXNAME", "GENEID") 
+tab <- table(txdf$GENEID) 
+txdf$ntx <- tab[match(txdf$GENEID, names(tab))]
+```
+
+## DTU analysis using DRIMSeq
+
+```{r}
+library(DRIMSeq)
+samples <- data.frame(
+  sample_id = samples,
+  group = c("WT", "WT", "Smchd1-null", "Smchd1-null", "Smchd1-null", "WT"),
+  stringsAsFactors = FALSE
+)
+samples$group <- as.factor(samples$group)
+counts <- as.data.frame(txi$counts, stringAsFactors = FALSE)
+counts <- counts[match(txdf$TXNAME, rownames(counts)),]
+counts <- cbind(txdf$GENEID, txdf$TXNAME, counts)
+colnames(counts)[3:ncol(counts)] <- make.names(colnames(counts)[3:ncol(counts)])
+colnames(counts) <- c("gene_id", "feature_id", samples$sample_id)
+d <- dmDSdata(counts = counts, samples = samples)
+d
+```
+
+```{r}
+d <- dmFilter(d, min_samps_gene_expr = 6, min_samps_feature_expr = 3, min_gene_expr = 10, min_feature_expr = 10, run_gene_twice = T)
+plotData(d)
+```
+
+```{r}
+design <- model.matrix(~group, data=DRIMSeq::samples(d))
+colnames(design) <- sub("group", "", colnames(design))
+set.seed(1904)
+d <- suppressWarnings(dmPrecision(d, design, BPPARAM = BiocParallel::MulticoreParam(8)))
+
+plotPrecision(d)
+```
+
+```{r}
+d <- suppressWarnings(dmFit(d, design = design, verbose=1, BPPARAM = BiocParallel::MulticoreParam(16)))
+head(proportions(d))
+```
+
+```{r}
+d <- dmTest(d, coef = "WT")
+head(results(d))
+plotPValues(d)
+```
+
+```{r}
+head(results(d, level = "feature"))
+plotPValues(d, level = "feature")
+```
+
+plot Pisd
+
+```{r}
+library(RColorBrewer)
+library(ggplot2)
+col <- brewer.pal(3, "Set2")
+pdf("shortDTUPropPisd.pdf", height = 6, width =9)
+plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
+               group_colors = col[1:2], plot_type = "boxplot1") + 
+  ggtitle("Pisd (short read)") +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 0.5), 
+        text = element_text(size=10), 
+        legend.text=element_text(size=10)) 
+dev.off()
+```
+
+
+
+stageR analysis
+
+```{r}
+res <- results(d)
+res.txp <- results(d, level = "feature")
+no.na <- function(x) ifelse(is.na(x), 1, x) 
+res$pvalue <- no.na(res$pvalue) 
+res.txp$pvalue <- no.na(res.txp$pvalue)
+
+library(stageR)
+## Assign gene-level pvalues to the screening stage
+pScreen <- res$pvalue
+# strp <- function(x) substr(x,1,18)
+names(pScreen) <- results(d)$gene_id
+## Assign transcript-level pvalues to the confirmation stage
+pConfirmation <- matrix(res.txp$pvalue, ncol = 1)
+rownames(pConfirmation) <- res.txp$feature_id
+## Create the gene-transcript mapping
+tx2gene <- res.txp[,c("feature_id", "gene_id")]
+# for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
+## Create the stageRTx object and perform the stage-wise analysis
+stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
+alpha = 0.05)
+
+suppressWarnings({
+  drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+})
+head(drim.padj)
+# write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
+```
+
+## run diffSplice
+
+```{r}
+library(edgeR)
+library(limma)
+y <- DGEList(counts = as.matrix(DRIMSeq::counts(d)[,c(-1, -2)]), samples = DRIMSeq::samples(d))
+rownames(y) <- counts(d)$feature_id
+y <- calcNormFactors(y)
+y$samples
+cpm <- cpm(y, log=T)
+plotMDS(cpm, col=as.numeric(as.factor(y$samples$group)))
+```
+
+```{r annotation}
+library(Mus.musculus)
+geneid <- counts(d)$gene_id
+geneid <- substr(geneid, 1, 18)
+genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENTREZID"), 
+                keytype="ENSEMBL")
+# genes <- genes[!duplicated(genes$ENSEMBL),]
+m <- match(geneid, genes$ENSEMBL)
+genes <- genes[m,]
+head(genes)
+y$genes <- genes
+```
+
+```{r fit}
+v <- voom(y, design, plot=T)
+fit <- lmFit(v,design)
+efit <- eBayes(fit)
+```
+
+```{r}
+geneid <- counts(d)$gene_id
+featureid <- counts(d)$feature_id
+
+ex <- diffSplice(efit, geneid = geneid, exonid=featureid)
+ts <- topSplice(ex,  number=Inf)
+ts.tx <- topSplice(ex, test = "t", number = Inf)
+ts.f <- topSplice(ex, test = "F", number = Inf)
+
+head(ts)
+table(ts$FDR < 0.05)
+```
+
+
+
+Two-stage test for diffSplice
+
+```{r}
+
+library(stageR)
+
+pScreen <- ts$P.Value
+pScreen2 <- ts.f$P.Value
+names(pScreen) <- ts$GeneID
+names(pScreen2) <- ts.f$GeneID
+pConfirmation <- matrix(ts.tx$P.Value, ncol = 1)
+rownames(pConfirmation) <- ts.tx$ExonID
+
+tx2gene <- ts.tx[,c("ExonID", "GeneID")]
+
+stageRObj2 <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj2 <- stageWiseAdjustment(object = stageRObj2, method = "dtu",
+alpha = 0.05)
+stageRObj3 <- stageRTx(pScreen = pScreen2, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj3 <- stageWiseAdjustment(object = stageRObj3, method = "dtu",
+alpha = 0.05)
+suppressWarnings({
+  ds.padj <- getAdjustedPValues(stageRObj2, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+  ds.padj.f <- getAdjustedPValues(stageRObj3, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+})
+head(ds.padj)
+head(ds.padj.f)
+
+```
+
+
+```{r}
+plotSplice(ex, geneid = "Pisd", genecolname="SYMBOL")
+```
+
+## Save results
+
+write result table to file for the convenience of comparing with long read results
+
+```{r}
+# gene level diffSplice result (simes)
+write.table(ts, "topSplice_simes.tsv", sep = "\t")
+# drimseq+stager results
+write.table(drim.padj, "drimseq_stager.tsv", sep = "\t")
+# drimseq gene
+write.table(res, "drimseq_gene.tsv", sep = "\t")
+# drimseq proportion
+write.table(proportions(d), "drimseq_proportion.tsv", sep="\t")
+```
+
+
+

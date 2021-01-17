@@ -1,0 +1,222 @@
+---
+title: "RNA-seq analysis"
+author: "Cynthia Liu"
+date: "17 December 2015"
+output: html_document
+---
+
+
+## NSC data analysis
+```{r,fig.width=12, fig.height=6,warning=FALSE}
+library(edgeR)
+library(limma)
+ load("NSCRNAseq.rda")
+ x = list()
+x$counts = counts$counts
+x$genes = geneanno[,-3]
+
+sel = rowSums(cpm(x$counts)>0.5)>=3
+
+x$counts = x$counts[sel,]
+x$genes = x$genes[sel,]
+x$anno = x$anno[sel,]
+
+samplenames = colnames(x$counts)
+genotype = as.factor(c("WT", "WT","Homozygous","Homozygous","Homozygous","WT"))
+sampleanno = data.frame("sampleID"=samplenames, "genotype"=genotype, "group"=genotype)
+
+x$samples = sampleanno
+x$samples$lib.size = colSums(x$counts)
+x$samples$norm.factors = 1
+
+row.names(x$samples) = colnames(x$counts)
+
+x = new("DGEList", x)
+dim(x)
+des = model.matrix(~genotype)
+colnames(des)[2] = "WT"
+
+x = calcNormFactors(x, method="TMM")
+x = estimateDisp(x, robust=TRUE)
+
+sqrt(x$common.disp)
+v=voomWithQualityWeights(x, design=des, normalization="none", plot=FALSE)
+####mean-variance plot#####
+#pdf("mean-variance-neural.pdf",width=10,height=5)
+v=voomWithQualityWeights(x, design=des, normalization="none", plot=TRUE,col=c( "darkolivegreen4", "darkolivegreen4","deepskyblue" ,"deepskyblue" ,"deepskyblue" ,"darkolivegreen4"))
+#dev.off()
+labelsK=c("WT","WT","Smchd1-null","Smchd1-null","Smchd1-null","WT")
+vK=v
+
+vfitK = lmFit(vK,des)
+vtfitK=treat(vfitK,lfc=log2(1.5))
+vfitK= eBayes(vfitK)
+resultsK <- decideTests(vfitK,p.value=0.01)
+summary(resultsK)
+```
+ 
+ 
+## Lymphoma data analysis 
+```{r,warning=FALSE,fig.width=12, fig.height=6,warning=FALSE}
+load("LymphomaRNAseq.rda")
+ x = list()
+x$counts = cbind(counts$counts, "NJ_RNA1__Smchd1_WT_lymphoma_1934__C2G5CACXX_AGTCAA_L003.sam"=counts2merge$counts[,1])
+
+x$genes = geneanno[,-3]
+
+sel = rowSums(cpm(x$counts)>0.5)>=3
+
+x$counts = x$counts[sel,]
+x$genes = x$genes[sel,]
+x$anno = x$anno[sel,]
+
+samplenames = colnames(x$counts)
+genotype = factor(rep(c("Smchd1-null", "WT"), times=c(4,3)), levels=c("WT", "Smchd1-null"))
+sampleanno = data.frame("sampleID"=samplenames, "genotype"=genotype, "group"=genotype)
+
+x$samples = sampleanno
+x$samples$lib.size = colSums(x$counts)
+x$samples$norm.factors = 1
+
+row.names(x$samples) = colnames(x$counts)
+
+x = new("DGEList", x)
+dim(x)
+
+
+des = model.matrix(~genotype)
+des[,2]=1-des[,2]
+colnames(des)[2] = "WT"
+
+
+x = calcNormFactors(x, method="TMM")
+x = estimateDisp(x, robust=TRUE)
+
+sqrt(x$common.disp)
+v=voomWithQualityWeights(x, design=des, normalization="none", plot=TRUE,col=c("deepskyblue" ,"deepskyblue" ,"deepskyblue","deepskyblue", "darkolivegreen4", "darkolivegreen4","darkolivegreen4"))
+vfit = lmFit(v,des)
+vtfit=treat(vfit,lfc=log2(1.5))
+vfit= eBayes(vfit)
+results <- decideTests(vfit,p.value=0.01)
+summary(results)
+```
+
+
+
+
+##MDS plot## 
+
+```{r,fig.width=12, fig.height=6,warning=FALSE}
+
+#pdf("mdsplot.pdf",width=10,height=5)
+par(mfrow=c(1,2))
+plotMDS(vK,label=c(1,2,3,4,5,6),col=c( "darkolivegreen4", "darkolivegreen4","deepskyblue" ,"deepskyblue" ,"deepskyblue" ,"darkolivegreen4"),cex=2,main="Neural Stem Cell")
+legend("topleft",legend=c("Wild Type","Smchd1-null"),text.col=c( "darkolivegreen4","deepskyblue"))
+plotMDS(v,label=c(1,2,3,4,5,6,7),xlim=c(-2.5,5),cex=2,main="Lymphoma Cell",col=c("deepskyblue","deepskyblue","deepskyblue","deepskyblue","darkolivegreen4","darkolivegreen4","darkolivegreen4"))
+#dev.off()
+
+
+
+```
+##volcanoplot##
+
+```{r,fig.width=12, fig.height=6,warning=FALSE}
+
+library(scales)
+par(mfrow=c(1,2))
+#pdf("volcanoplot.pdf", width=8,height=4)
+par(mfrow=c(1,2))
+volcanoplot(fit = vfitK, coef = 2, col=as.character(factor(x = resultsK[,2], levels = c(1, 0, -1), labels = c(alpha("darkred", .4), alpha("grey", 0.4), alpha("darkblue", .4)))), cex=0.7, main="(A) NSC RNA-seq",ylim=c(-10,30))
+iq=vfitK$genes$Symbols=="Smchd1"
+points(vfitK$coef[iq,2],(vfitK$lods)[iq,2],pch=1)
+text(vfitK$coef[iq,2],(vfitK$lods)[iq,2],labels=vfitK$genes$Symbols[iq],cex=0.6,lwd=1.3,pos=2)
+legend("topleft",legend=c("Up-regulated genes", "Down-regulated genes"),pch=16, col = c("darkred", "darkblue"),cex=0.6)
+volcanoplot(fit = vfit, coef = 2, col=as.character(factor(x = results[,2], levels = c(1, 0, -1), labels = c(alpha("darkred", .4), alpha("grey", 0.4), alpha("darkblue", .4)))), cex=0.7, main="(B) Lymphoma cell line RNA-seq")
+iq=vfit$genes$Symbols=="Smchd1"
+points(vfit$coef[iq,2],(vfit$lods)[iq,2],pch=1)
+text(vfit$coef[iq,2],(vfit$lods)[iq,2],labels=vfit$genes$Symbols[iq],cex=0.6,lwd=1.3,pos=2)
+
+#dev.off()
+
+```
+
+##Overlap result##
+
+```{r,warning=FALSE}
+
+##############################################################################################
+#FDR 0.01#
+##############################################################################################
+cutoff=0.01
+topK=topTable(vfitK,coef=2,n=Inf)
+topT=topTable(vfit,coef=2,n=Inf)
+m=match(topT[,"GeneID"],topK[,"GeneID"])
+
+newvk=topK[m[!is.na(m)],]
+m1=match(newvk[,"GeneID"],topT[,"GeneID"])
+newvt=topT[m1[!is.na(m1)],]
+
+new=merge(newvk,newvt,by.x="GeneID",by.y="GeneID",suffixes=c(".NSC",".Lymphoma"))
+
+
+acct=topT[topT[,"adj.P.Val"]<=cutoff,"GeneID"]
+acck=topK[topK[,"adj.P.Val"]<=cutoff,"GeneID"]
+mergedt=new[new[,"adj.P.Val.Lymphoma"]<=cutoff,"GeneID"]
+mergedk=new[new[,"adj.P.Val.NSC"]<=cutoff,"GeneID"]
+it=acct%in%mergedt
+ik=acck%in%mergedk
+missedt=topT[topT[,"adj.P.Val"]<=cutoff,][!it,]
+wholet=matrix(NA,nrow(missedt),14)
+wholet=data.frame(missedt[,1],wholet,missedt[,2:11])
+direction=rep(NA,nrow(wholet))
+direction[wholet[,"logFC"]>0]=c("Lymphomaup")
+direction[wholet[,"logFC"]<0]=c("Lymphomadown")
+wholet=data.frame(wholet,direction)
+missedk=topK[topK[,"adj.P.Val"]<=cutoff,][!ik,]
+wholek=matrix(NA,nrow(missedk),10)
+wholek=data.frame(missedk,wholek)
+direction=rep(NA,nrow(wholek))
+direction[wholek[,"logFC"]>0]=c("NSCup")
+direction[wholek[,"logFC"]<0]=c("NSCdown")
+wholek=data.frame(wholek,direction)
+
+
+tdown=new[,"GeneID"][new[,"logFC.Lymphoma"]<0 & new[,"adj.P.Val.Lymphoma"]<=cutoff]
+tup=new[,"GeneID"][new[,"logFC.Lymphoma"]>0 & new[,"adj.P.Val.Lymphoma"]<=cutoff ]
+kup=new[,"GeneID"][new[,"logFC.NSC"]>0 & new[,"adj.P.Val.NSC"]<=cutoff]
+kdown=new[,"GeneID"][new[,"logFC.NSC"]<0 & new[,"adj.P.Val.NSC"]<=cutoff]
+
+tdowntable=match(tdown,new[,1])
+tuptable=match(tup,new[,1])
+kdowntable=match(kdown,new[,1])
+kuptable=match(kup,new[,1])
+
+upup=match(intersect(tup,kup),new[,1])
+updown=match(intersect(kup,tdown),new[,1])
+downup=match(intersect(tup,kdown),new[,1])
+downdown=match(intersect(tdown,kdown),new[,1])
+
+direction=rep(NA,nrow(new))
+direction[tdowntable]=c("Lymphomadown")
+direction[tuptable]=c("Lymphomaup")
+direction[kdowntable]=c("NSCdown")
+direction[kuptable]=c("NSCup")
+
+direction[upup]=c("NSCup-Lymphomaup")
+direction[downdown]=c("NSCdown-Lymphomadown")
+direction[downup]=c("NSCdown-Lymphomaup")
+direction[updown]=c("NSCup-Lymphomadown")
+               
+newtable=data.frame(new,direction)
+i=is.na(direction)
+newtable2=newtable[!i,]
+colnames(wholek)=colnames(wholet)=colnames(newtable2)
+newtable2=rbind(newtable2,wholek,wholet)
+write.csv(newtable2,file="FDR001.csv",row.names=F)
+
+
+```
+
+```{r}
+sessionInfo()
+```
