@@ -8,4 +8,5 @@ Our RNA-seq data can be accessed from Gene Expression Omnibus (GEO) under access
 
 * `NSC` :This folder contains the code used to analyze our NSC datasets.
   * `Chen_et_al_2015_PNAS` contains scripts to analyze the NSC short-read dataset. 
-  * `preprocess` contains the scripts to basecall, trim and demultiplex the raw fast5 data, map the reads to the reference genome and count them.
+  * `preprocess` contains the scripts to map the reads to the reference genome and do gene-level counting.
+  * 
