@@ -11,6 +11,7 @@ This repository contains the code used to perform the analysis and generate the 
   * [`flames`](NSC/flames) contains the script and config file to run [*FLAMES*](https://github.com/LuyiTian/FLAMES) and *SQANTI*, and the code to plot the number of detected isoforms.
 * [`sequins`](sequins) contains the code used to analyze our sequin data.
   * [`illumina`](sequins/illumina) contains the code used to analyze the sequins short-read data. Other files under `sequins` are for the ONT long-read data.
+  * [`annotations`](sequins/annotations) contains the annotations for sequins, including decoy chromosome sequence, transcript sequences, GTF annotation file and gene/transcript length and abundance.
 
 
 
