@@ -6,7 +6,8 @@ Our RNA-seq data can be accessed from Gene Expression Omnibus (GEO) under access
 
 
 
-* `NSC` :This folder contains the code used to analyze our NSC datasets.
-  * `Chen_et_al_2015_PNAS` contains scripts to analyze the NSC short-read dataset. 
-  * `preprocess` contains the scripts to map the reads to the reference genome and do gene-level counting.
-  * 
+* [`NSC`](NSC) contains the code used to analyze our NSC datasets.
+  * [`Chen_et_al_2015_PNAS`](NSC/Chen_et_al_2015_PNAS) contains code to analyze the NSC short-read dataset. Other files under `NSC` are for the ONT long-read dataset.
+  * [`preprocess`](NSC/preprocess) contains the code to map the reads to the reference genome and do gene-level counting.
+  * [`QC`](NSC/QC) contains the code to calculate QC metrices and make QC plots for the NSC long-read dataset.
+  * [`flames`](NSC/flames) contains the script and config file to run [*FLAMES*](https://github.com/LuyiTian/FLAMES) and [*SQANTI*](https://github.com/ConesaLab/SQANTI), and the code to plot the number of detected isoforms.

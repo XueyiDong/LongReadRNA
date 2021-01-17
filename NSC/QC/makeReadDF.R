@@ -1,4 +1,4 @@
-source("Soneson/func.R")
+source("func.R")
 library(ShortRead)
 library(GenomicAlignments)
 library(dplyr)
@@ -7,23 +7,11 @@ library(data.table)
 library(GenomicFeatures)
 library(Hmisc)
 
-
-
-# bam <- "../flames/results/realign2transcript.bam"
 dir <- "/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/results/rebasecall/minimap2_FLAMES_transcript"
 samples <- paste0("barcode", c("07", 10:13, 15:17))
 bams <- paste0(samples, ".sorted.bam")
-# for (i in 1:8){
-#   cat("Reading", bams[i], "\n")
-#   bam1 <- suppressWarnings(readBam(file.path(dir_bam, bams[i])))
-#   cat("Making read DF\n")
-#   readDF <- makeReadDf(bam1)
-#   cat("Making summary list\n")
-#   summ <- makeSummaryList(bam1)
-#   saveRDS(readDF, file = file.path(dir_bam, paste0(bams[i], ".readDF.RDS")))
-#   saveRDS(summ, file=file.path(dir_bam, paste0(bams[i], ".summ.RDS")))
-# }
-for (i in 3:8){
+
+for (i in 1:8){
   cat("Reading bam file.\n")
   bam1 <- suppressWarnings(readBam(file.path(dir, bams[i])))
   cat("Making read DF.\n")
