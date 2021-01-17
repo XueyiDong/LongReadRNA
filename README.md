@@ -11,6 +11,5 @@ Our RNA-seq data can be accessed from Gene Expression Omnibus (GEO) under access
   * [`preprocess`](NSC/preprocess) contains the code to map the reads to the reference genome and do gene-level counting.
   * [`QC`](NSC/QC) contains the code to calculate QC metrices and make QC plots for the NSC long-read dataset.
   * [`flames`](NSC/flames) contains the script and config file to run [*FLAMES*](https://github.com/LuyiTian/FLAMES) and [*SQANTI*](https://github.com/ConesaLab/SQANTI), and the code to plot the number of detected isoforms.
-  * `DE.Rmd` and `DTU.Rmd` are the code to perform differential gene expression (DE) and differetial transcript usage (DTU) analysis.
 * [`sequins`](sequins) contains the code used to analyze our sequin datasets.
   * 
