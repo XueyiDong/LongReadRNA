@@ -126,6 +126,15 @@ summary(lfc.lm)
 ```
 
 ```{r}
+table(prediction=(tt$adj.P.Val<0.05), trueLabel=tt$logFC_expected!=0)
+# explore false positive
+tt[tt$adj.P.Val<0.05 & tt$logFC_expected==0,]
+# explore false negative
+tt[tt$adj.P.Val>0.05 & tt$logFC_expected!=0,]
+```
+
+
+```{r}
 write.table(tt, file = "topTable.txt", sep = "\t")
 ```
 
