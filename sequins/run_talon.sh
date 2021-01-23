@@ -10,41 +10,41 @@ TALON_WF=/stornext/General/data/user_managed/grpu_mritchie_1/HasaruK/talon_workf
 SEQUINS_DIR=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin
 DATA_DIR=$SEQUINS_DIR/20200228_YPRDP_2xsequin_mixAB/sequins_rebasecall/pass/merged
 OUT_DIR=/wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/sequins/talon
-# # map
-# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode01.fq.gz > $OUT_DIR/barcode01.sam
-# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode02.fq.gz > $OUT_DIR/barcode02.sam
-# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode03.fq.gz > $OUT_DIR/barcode03.sam
-# minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode04.fq.gz > $OUT_DIR/barcode04.sam
-#------------------------
-# # convert to bam
-# samtools view -S -b $OUT_DIR/barcode01.sam > $OUT_DIR/barcode01.bam
-# samtools view -S -b $OUT_DIR/barcode02.sam > $OUT_DIR/barcode02.bam
-# samtools view -S -b $OUT_DIR/barcode03.sam > $OUT_DIR/barcode03.bam
-# samtools view -S -b $OUT_DIR/barcode04.sam > $OUT_DIR/barcode04.bam
-# # index bam
-# samtools index $OUT_DIR/barcode01.bam
-# samtools index $OUT_DIR/barcode02.bam
-# samtools index $OUT_DIR/barcode03.bam
-# samtools index $OUT_DIR/barcode04.bam
-#-------------------------
-# # run TranscriptClean
-# module load samtools
-# module load bedtools
-# module load anaconda3
-# source activate
-# conda activate TranscriptClean2
-# module load R
-# python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode01.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode01
-# Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode01
-# python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode02.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode02
-# Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode02
-# python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode03.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode03
-# Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode03
-# python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode04.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode04
-# Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode04
-# conda deactivate
-# run TALON
-# module unload python
+# map
+minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode01.fq.gz > $OUT_DIR/barcode01.sam
+minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode02.fq.gz > $OUT_DIR/barcode02.sam
+minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode03.fq.gz > $OUT_DIR/barcode03.sam
+minimap2 -ax splice --MD -c $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa $DATA_DIR/barcode04.fq.gz > $OUT_DIR/barcode04.sam
+------------------------
+# convert to bam
+samtools view -S -b $OUT_DIR/barcode01.sam > $OUT_DIR/barcode01.bam
+samtools view -S -b $OUT_DIR/barcode02.sam > $OUT_DIR/barcode02.bam
+samtools view -S -b $OUT_DIR/barcode03.sam > $OUT_DIR/barcode03.bam
+samtools view -S -b $OUT_DIR/barcode04.sam > $OUT_DIR/barcode04.bam
+# index bam
+samtools index $OUT_DIR/barcode01.bam
+samtools index $OUT_DIR/barcode02.bam
+samtools index $OUT_DIR/barcode03.bam
+samtools index $OUT_DIR/barcode04.bam
+-------------------------
+# run TranscriptClean
+module load samtools
+module load bedtools
+module load anaconda3
+source activate
+conda activate TranscriptClean2
+module load R
+python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode01.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode01
+Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode01
+python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode02.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode02
+Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode02
+python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode03.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode03
+Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode03
+python $TALON_WF/TranscriptClean/TranscriptClean.py --sam $OUT_DIR/barcode04.sam --genome $SEQUINS_DIR/annotations/rnasequin_decoychr_2.4.fa --outprefix $OUT_DIR/barcode04
+Rscript $TALON_WF/TranscriptClean/generate_report.R $OUT_DIR/barcode04
+conda deactivate
+run TALON
+module unload python
 cd /wehisan/home/allstaff/d/dong.x/analysis/2020/smchd1/sequins/talon
 
 module load anaconda3

@@ -183,7 +183,7 @@ stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
 alpha = 0.05)
 
 suppressWarnings({
-  drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
+  drim.padj <- getAdjustedPValues(stageRObj, order=FALSE,
                                   onlySignificantGenes=FALSE)
 })
 head(drim.padj)
@@ -202,6 +202,7 @@ proportion$geneID <- tx2gene
 m <- match(proportion$geneID, geneanno$NAME)
 proportion$MIX_A <- anno$MIX_A / geneanno$MIX_A[m]
 proportion$MIX_B <- anno$MIX_B / geneanno$MIX_B[m]
+saveRDS(proportion, file="proportion.RDS")
 
 m <- match(proportion$txID, proportions(d)[,2])
 cor(proportion$MIX_B, proportions(d)[,3][m], use="complete.obs")
@@ -275,9 +276,9 @@ pScreenAdjusted = FALSE, tx2gene = tx2gene)
 stageRObj3 <- stageWiseAdjustment(object = stageRObj3, method = "dtu",
 alpha = 0.05)
 suppressWarnings({
-  ds.padj <- getAdjustedPValues(stageRObj2, order=TRUE,
+  ds.padj <- getAdjustedPValues(stageRObj2, order=FALSE,
                                   onlySignificantGenes=FALSE)
-  ds.padj.f <- getAdjustedPValues(stageRObj3, order=TRUE,
+  ds.padj.f <- getAdjustedPValues(stageRObj3, order=FALSE,
                                   onlySignificantGenes=FALSE)
 })
 head(ds.padj)
@@ -407,33 +408,6 @@ ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
   scale_colour_manual(values = col_impression)
 dev.off()
 ```
-
- 
-
-
-New plot for the paper
-
-```{r}
-results.plot <- results.all[results.all$test %in% c("DRIMSeq_feature", "DRIMSeq_gene", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript", "diffSplice_simes", "diffSplice_stageR_gene", "diffSplice_stageR_transcript", "diffSplice_t"), ]
-results.plot$test <- factor(results.plot$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript", "diffSplice_simes", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript" ))
-
-
-
-pdf("plots/DTU_FDR_TRUE.pdf", height = 5, width = 8)
-ggplot(na.omit(results.plot[results.plot$DTU == TRUE,]), aes(x = test, y = FDR, fill=level, colour = level))+
-  geom_boxplot(alpha = .6) +
-  geom_hline(yintercept = 0.05, linetype="dashed") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1),
-        text = element_text(size = 20),
-        plot.margin = unit(c(5.5, 5.5, 5.5, 25), "points"))  +
-  labs(y = "Adjusted p-value", x="Method", fill = "Test level", colour = "Test level") +
-  scale_fill_manual(values = c("#F09506", "#2A557B")) +
-  scale_colour_manual(values = c("#F09506", "#2A557B"))
-dev.off()
-```
-
-
 Calculate FDR and TPR.
 
 FDR = number of falsely detected genes / number of detected genes
@@ -459,9 +433,10 @@ TPR <- as.data.frame(t(TPR))
 TPR$V2 <- as.numeric(as.character(TPR$V2))
 colnames(TPR) <- c("test", "TPR")
 TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript", "diffSplice_simes", "diffSplice_F", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript" ))
+TPR
 ```
 
-FDR all 0. now plot TPR
+now plot TPR
 
 ```{r}
 pdf("plots/DTU_TPR.pdf")

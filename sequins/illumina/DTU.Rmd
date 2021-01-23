@@ -214,9 +214,129 @@ head(ds.padj.f)
 ```
 
 ## check results
-question: what should I do? Compare with long read? 
-Do I need to make a plot separately for short read?
-Maybe a scatter plot compare t btw long and short?
+
+Calculate FDR and TPR as did for long read.
+
+```{r}
+proportion <- readRDS("../proportion.RDS")
+a <- match(unique(drim.padj$geneID), drim.padj$geneID)
+b <- match(unique(ds.padj$geneID), ds.padj$geneID)
+c <- match(unique(ds.padj.f$geneID), ds.padj.f$geneID)
+results.all <- data.frame(
+  id = c(
+    res$gene_id,
+    res.txp$feature_id,
+    unique(drim.padj$geneID),
+    drim.padj$txID,
+    ts$GeneID,
+    ts.f$GeneID,
+    ts.tx$ExonID,
+    unique(ds.padj$geneID),
+    ds.padj$txID
+  ),
+  FDR = c(
+    res$adj_pvalue,
+    res.txp$adj_pvalue,
+    drim.padj$gene[a],
+    drim.padj$transcript,
+    ts$FDR,
+    ts.f$FDR,
+    ts.tx$FDR,
+    ds.padj$gene[b],
+    ds.padj$transcript
+  ),
+  DTU = c(
+    proportion$isChanges[match(res$gene_id, proportion$geneID)],
+    proportion$isChanges[match(res.txp$feature_id, proportion$txID)],
+    proportion$isChanges[match(drim.padj$txID, proportion$txID)][a],
+    proportion$isChanges[match(drim.padj$txID, proportion$txID)],
+    proportion$isChanges[match(ts$GeneID, proportion$geneID)], 
+    proportion$isChanges[match(ts.f$GeneID, proportion$geneID)],
+    proportion$isChanges[match(ts.tx$ExonID, proportion$txID)], 
+    proportion$isChanges[match(ds.padj$geneID, proportion$geneID)][b], 
+    proportion$isChanges[match(ds.padj$txID, proportion$txID)]
+  ),
+  test = c(
+    rep("DRIMSeq_gene", nrow(res)),
+    rep("DRIMSeq_feature", nrow(res.txp)),
+    rep("DRIMSeq_stageR_gene", length(unique(drim.padj$geneID))),
+    rep("DRIMSeq_stageR_transcript", nrow(drim.padj)),
+    rep("diffSplice_simes", nrow(ts)),
+    rep("diffSplice_F", nrow(ts.f)),
+    rep("diffSplice_t", nrow(ts.tx)),
+    rep("diffSplice_stageR_gene", length(unique(ds.padj$geneID))),
+    rep("diffSplice_stageR_transcript", nrow(ds.padj))
+  ),
+  level = c(
+    rep("Gene level", nrow(res)),
+    rep("Transcript level", nrow(res.txp)),
+    rep("Gene level", length(unique(drim.padj$geneID))),
+    rep("Transcript level", nrow(drim.padj)),
+    rep("Gene level", nrow(ts)),
+    rep("Gene level", nrow(ts.f)),
+    rep("Transcript level", nrow(ts.tx)),
+    rep("Gene level", length(unique(ds.padj$geneID))),
+    rep("Transcript level", nrow(ds.padj))
+  )
+)
+
+results.all$test <-
+  factor(
+    results.all$test,
+    levels = c(
+      "DRIMSeq_gene",
+      "DRIMSeq_stageR_gene",
+      "diffSplice_simes",
+      "diffSplice_F",
+      "diffSplice_stageR_gene",
+      "DRIMSeq_feature",
+      "DRIMSeq_stageR_transcript",
+      "diffSplice_t",
+      "diffSplice_stageR_transcript"
+    )
+  )
+
+# manual colour scheme
+col_impression <- c("#D96A70", "#C68C81", "#303C24", "#476937", "#9FC675", "#8E3055", "#D5A2CB", "#3C5880", "#708FA6")
+
+pdf("plots/DTU_FDR_short.pdf", width = 17, height = 5)
+ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
+  geom_boxplot(alpha=.6, outlier.shape = NA)+
+  geom_point(position = position_jitterdodge(jitter.height = .02), cex=.7, alpha = .7)+
+  facet_grid(.~level) +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.text = element_text(size=14))+
+  geom_hline(yintercept = 0.05, linetype="dashed") +
+  labs(y = "Adjusted p-value", x="is DTU") +
+  scale_fill_manual(values = col_impression) +
+  scale_colour_manual(values = col_impression)
+dev.off()
+```
+Calculate FDR and TPR
+
+```{r}
+results.all$sig <- results.all$FDR < 0.05
+FDR <- sapply(unique(results.all$test), function(x){
+  results = na.omit(results.all[results.all$test == x, ])
+  fd = sum(results$sig & !(results$DTU))
+  dt = sum(results$sig)
+  return(c(as.character(x), fd/dt))
+}, simplify = TRUE)
+FDR
+
+TPR <- sapply(unique(results.all$test), function(x){
+  results = na.omit(results.all[results.all$test == x, ])
+  td = sum(results$sig & results$DTU)
+  pc = sum(results$DTU)
+  return(c(as.character(x), td/pc))
+}, simplify = TRUE)
+# TPR <- as.data.frame(t(TPR))
+# TPR$V2 <- as.numeric(as.character(TPR$V2))
+# colnames(TPR) <- c("test", "TPR")
+# TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript", "diffSplice_simes", "diffSplice_F", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript" ))
+TPR
+```
+
 
 save some results to table
 ```{r}
@@ -231,10 +351,5 @@ write.table(proportions(d), "drimseq_proportion.tsv", sep="\t")
 
 ```
 
-```{r}
-plotProportions(d, gene_id = "R1_32", group_variable = "group", plot_type = "barplot") + 
-  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
-        text = element_text(size=12), 
-        legend.text=element_text(size=10))
-```
+
 

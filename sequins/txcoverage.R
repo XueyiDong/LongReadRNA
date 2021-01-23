@@ -1,4 +1,4 @@
-source("../NSC/QC/Soneson/func.R")
+source("../NSC/QC/func.R")
 library(ShortRead)
 library(GenomicAlignments)
 library(dplyr)
