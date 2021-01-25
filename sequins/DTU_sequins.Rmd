@@ -501,7 +501,33 @@ cor(res[m, "lr"], res.short$lr, use = "complete.obs")
 cor(res[m, "pvalue"], res.short$pvalue, use = "complete.obs")
 ```
 
-not comparable
+calculate the overlap of top N genes of DRIMSeq gene results
+
+```{r}
+calcTopN_drim <- function(res.long, res.short, n){
+  # sort results
+  res.long <- res.long[order(res.long$adj_pvalue), ]
+  res.short <- res.short[order(res.short$adj_pvalue), ]
+  num <- sapply(1:n, function(x){
+    length(intersect(res.long[1:x, "gene_id"], res.short[1:x, "gene_id"]))
+  }, simplify = TRUE)
+  intTopN <- data.frame(
+    number = 1:n,
+    intersect = num
+  )
+  return(intTopN)
+}
+
+top47.drim <- calcTopN_drim(res, res.short, 47)
+pdf("plots/drimTopN.pdf", height = 5, width = 8)
+ggplot(top47.drim, aes(x=number, y=intersect)) + geom_line() +
+  geom_abline(colour="grey") +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.text = element_text(size=14)) +
+  labs(x = "Top n genes", y = "Number of intersect")
+dev.off()
+```
+
 
 and compare DRIMSeq estimated proportion
 ```{r}
@@ -514,7 +540,22 @@ plot(proportions(d)[m, 3], proportions.short$X6.HCC.1_S6)
 
 Compare long and short read DRIMSeq proportions to annotated proportions
 ```{r}
+proportionA <- data.frame(
+  transcript = rep(proportion$txID, 2),
+  proportion_A = rep(proportion$MIX_A, 2),
+  proportion_estimated = c(proportions(d)$OXBCHWNYNTPSSTGN[match(proportion$txID, proportions(d)$feature_id)], proportions.short$X1.H1975.1_S1[match(proportion$txID, proportions.short$feature_id)]),
+  dataset = rep(c("long read", "short read"), c(nrow(proportion), nrow(proportion))),
+  abundance = rep(anno$MIX_A, 2)
+)
 
+pdf("plots/proportionA.pdf", width = 8, height = 5)
+ggplot(proportionA, aes(x=proportion_A, y=proportion_estimated, colour=dataset)) +
+  geom_point() +
+  geom_smooth(method="lm", formula=y~x)+
+  labs(x = "Proportion expected", y = "proportion estimated") +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.text = element_text(size=14))
+dev.off()
 ```
 
 
