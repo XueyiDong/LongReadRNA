@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, cache=TRUE, message = FALSE)
 ```{r}
 library(DRIMSeq)
 library(limma)
+library(edgeR)
 ```
 
 ## Loading data
@@ -347,12 +348,12 @@ ggplot(top200, aes(x=number, y=intersect)) +geom_line()
 Then, compare this of DRIMSeq gene-level results
 ```{r}
 res.short <- read.table("Chen_et_al_2015_PNAS/drimseq_gene.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+res.short$symbol <- genes$SYMBOL[match(substr(res.short$gene_id, 1, 18), genes$ENSEMBL)]
 m <- match(res.short$gene_id, res$gene_id)
 cor(res[m, "lr"], res.short$lr, use = "complete.obs")
 cor(res[m, "pvalue"], res.short$pvalue, use = "complete.obs")
 ```
 
-not comparable
 
 and compare DRIMSeq estimated proportion
 ```{r}
@@ -385,7 +386,7 @@ tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5",
 #                                     filters=list(ensembl_transcript_id="ENSMUST00000201980")) 
 gtrack <- GenomeAxisTrack()
 pdf("plots/genePisd.pdf", width = 10, height = 5)
-plotTracks(list(gtrack, tr_Pisd), transcriptAnnotation="transcript", lwd = 1, lwd.grid = 1)
+plotTracks(list(gtrack, tr_Pisd), lwd = 1, lwd.grid = 1)
 dev.off()
 ``` 
 

@@ -189,6 +189,22 @@ ggplot(tt, aes(x = t, y = t.short))+
 dev.off()
 ```
 
+plot R1_63 long vs short CPM
+```{r}
+library(data.table)
+v.short <- readRDS("./illumina/v.RDS")
+R1_63 <- data.frame(
+  logCPM = c(v$E["R1_63", ], v.short$E["R1_63", ]),
+  sample = c(rownames(v$targets), rownames(v.short$targets)),
+  group = c(v$targets$group, v.short$targets$group),
+  dataset = rep(c("long read", "short read"), c(4, 4))
+)
+R1_63$group[5:8] <- c("A", "A", "B", "B")
+
+ggplot(R1_63, aes(x=dataset, y=logCPM, colour=group)) +
+  geom_point()
+```
+
 
 ```{r}
 # 

@@ -313,7 +313,7 @@ suppressWarnings({
 drim.padj$isChanges <- proportion$isChanges[match(drim.padj$txID, proportion$txID)]
 a <- match(unique(drim.padj$geneID), drim.padj$geneID)
 res.all <- data.frame(
-  id = c(res.gene$gene_id, res.tx$feature_id, unique(drim.padj$geneID), drim.padj$txID),
+  id = c(res.gene$gene_id, res.tx$feature_id, unique(as.character(drim.padj$geneID)), as.character(drim.padj$txID)),
   FDR = c(res.gene$adj_pvalue, res.tx$adj_pvalue, drim.padj$gene[a], drim.padj$transcript),
   DTU = c(res.gene$isChanges, res.tx$isChanges, drim.padj$isChanges[a], drim.padj$isChanges),
   test = c(rep("DRIMSeq_gene", nrow(res.gene)), rep("DRIMSeq_feature", nrow(res.tx)), rep("DRIMSeq_stageR_gene", length(unique(drim.padj$geneID))), rep("DRIMSeq_stageR_transcript", nrow(drim.padj))),
@@ -348,7 +348,7 @@ b <- match(unique(ds.padj$geneID), ds.padj$geneID)
 c <- match(unique(ds.padj.f$geneID), ds.padj.f$geneID)
 ds.all <- data.frame(
   id = c(ts$GeneID, ts.f$GeneID, ts.tx$ExonID, 
-         unique(ds.padj$geneID), ds.padj$txID
+         unique(as.character(ds.padj$geneID)), as.character(ds.padj$txID)
          # , 
          # unique(ds.padj.f$geneID), ds.padj.f$txID
          ),
@@ -421,6 +421,11 @@ FDR <- sapply(unique(results.all$test), function(x){
   dt = sum(results$sig)
   return(c(as.character(x), fd/dt))
 }, simplify = TRUE)
+FDR <- as.data.frame(t(FDR))
+FDR$V2 <- as.numeric(as.character(FDR$V2))
+colnames(FDR) <- c("test", "FDR")
+FDR$test <- factor(FDR$test, levels = c("DRIMSeq_gene", "DRIMSeq_stageR_gene","diffSplice_simes", "diffSplice_F", "diffSplice_stageR_gene", "DRIMSeq_feature", "DRIMSeq_stageR_transcript",
+                               "diffSplice_t", "diffSplice_stageR_transcript"))
 FDR
 
 TPR <- sapply(unique(results.all$test), function(x){
@@ -432,23 +437,46 @@ TPR <- sapply(unique(results.all$test), function(x){
 TPR <- as.data.frame(t(TPR))
 TPR$V2 <- as.numeric(as.character(TPR$V2))
 colnames(TPR) <- c("test", "TPR")
-TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript", "diffSplice_simes", "diffSplice_F", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript" ))
+TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_stageR_gene","diffSplice_simes", "diffSplice_F", "diffSplice_stageR_gene", "DRIMSeq_feature", "DRIMSeq_stageR_transcript",
+                               "diffSplice_t", "diffSplice_stageR_transcript" ))
 TPR
 ```
 
-now plot TPR
+now plot TPR and FDR
 
 ```{r}
-pdf("plots/DTU_TPR.pdf")
+pdf("plots/DTU_TPR.pdf", height=5, width=8)
 ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   labs (x = "Test", y = "True positive rate") +
-  scale_fill_brewer(palette = "Set1")+
+  # scale_fill_brewer(palette = "Set1")+
   theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), text = element_text(size=16),
-        legend.position = "none")
+        legend.position = "none") +
+  scale_fill_manual(values = col_impression)
+dev.off()
+
+pdf("plots/DTU_FDR0.pdf", height=5, width=8)
+ggplot(FDR, aes(x=test, y=FDR, fill=test)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  labs (x = "Test", y = "False discovery rate") +
+  # scale_fill_brewer(palette = "Set1")+
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), text = element_text(size=16),
+        legend.position = "none") +
+  scale_fill_manual(values = col_impression)
 dev.off()
 ```
+
+Look into FP and FN genes
+
+```{r}
+FP <- na.omit(results.all[results.all$DTU==FALSE & results.all$FDR<0.05,])
+FN <- na.omit(results.all[results.all$DTU==TRUE & results.all$FDR>0.05,])
+FP
+FN
+```
+
 
 
 ```{r}
@@ -486,8 +514,12 @@ calcTopN <- function(tl, ts, n){
 }
 
 top47 <- calcTopN(ts, ts.short, 47)
-ggplot(top47, aes(x=number, y=intersect)) + geom_line() +
-  geom_abline(colour="grey")
+topN.ds <- ggplot(top47, aes(x=number, y=intersect)) + geom_line() +
+  geom_abline(colour="grey") +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.text = element_text(size=14)) +
+  labs(x = "Top n genes", y = "Number of intersect") +
+  ggtitle("diffSplice")
 ```
 
 wow, nice!
@@ -519,15 +551,31 @@ calcTopN_drim <- function(res.long, res.short, n){
 }
 
 top47.drim <- calcTopN_drim(res, res.short, 47)
-pdf("plots/drimTopN.pdf", height = 5, width = 8)
-ggplot(top47.drim, aes(x=number, y=intersect)) + geom_line() +
+# pdf("plots/drimTopN.pdf", height = 5, width = 8)
+topN.drim <- ggplot(top47.drim, aes(x=number, y=intersect)) + geom_line() +
   geom_abline(colour="grey") +
   theme_bw() +
   theme(text = element_text(size=20), legend.text = element_text(size=14)) +
-  labs(x = "Top n genes", y = "Number of intersect")
-dev.off()
+  labs(x = "Top n genes", y = "Number of intersect") +
+  ggtitle("DRIMSeq")
+# dev.off()
 ```
 
+```{r}
+top47.all <- data.frame(
+  number = c(top47$number, top47.drim$number),
+  intersect = c(top47$intersect, top47.drim$intersect),
+  method = rep(c("diffSplice", "DRIMSeq"), c(47, 47))
+)
+pdf("plots/topN.pdf", height = 5, width = 8)
+ggplot(top47.all, aes(x=number, y=intersect, colour=method)) + geom_line() +
+  geom_abline(colour="grey") +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.text = element_text(size=14)) +
+  labs(x = "Top n genes", y = "Number of intersect") +
+  scale_color_brewer(palette="Set1")
+dev.off()
+```
 
 and compare DRIMSeq estimated proportion
 ```{r}
@@ -556,6 +604,34 @@ ggplot(proportionA, aes(x=proportion_A, y=proportion_estimated, colour=dataset))
   theme_bw() +
   theme(text = element_text(size=20), legend.text = element_text(size=14))
 dev.off()
+```
+
+## Plot for gene R1_63
+
+```{r}
+library(Gviz)
+library(GenomicFeatures)
+gff <- "/wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf"
+annoDb <- makeTxDbFromGFF(gff)
+tr <- GeneRegionTrack(annoDb, chromosome = "chrIS", start = 8945052, end = 9015138)
+gtrack <- GenomeAxisTrack()
+plotTracks(list(gtrack, tr), transcriptAnnotation="transcript", lwd = 1, lwd.grid = 1)
+```
+
+```{r}
+library(data.table)
+anno63 <- anno[anno$NAME == "R1_63_1" | anno$NAME == "R1_63_2", ]
+anno63 <- melt(anno63, id = c("NAME", "LENGTH"))
+colnames(anno63)<- c("Transcript", "Length", "Group", "Abundance") 
+anno63$Transcript <- factor(anno63$Transcript, levels = c("R1_63_2", "R1_63_1"))
+
+ggplot(anno63, aes(x=Transcript, y=Abundance, fill=Group)) +
+  geom_bar(stat="identity", position="dodge") +
+  theme_bw() +
+  theme(text = element_text(size=20), legend.text = element_text(size=14)) 
+
+# library(cowplot)
+# plot_grid(tracks, prop63, ncol=2)
 ```
 
 

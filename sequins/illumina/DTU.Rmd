@@ -219,6 +219,9 @@ Calculate FDR and TPR as did for long read.
 
 ```{r}
 proportion <- readRDS("../proportion.RDS")
+proportion$FC <- proportion$MIX_A / proportion$MIX_B
+proportion$isChanges <- FALSE
+proportion$isChanges[abs(proportion$FC-1) > 0.001] <- TRUE
 a <- match(unique(drim.padj$geneID), drim.padj$geneID)
 b <- match(unique(ds.padj$geneID), ds.padj$geneID)
 c <- match(unique(ds.padj.f$geneID), ds.padj.f$geneID)
@@ -226,13 +229,13 @@ results.all <- data.frame(
   id = c(
     res$gene_id,
     res.txp$feature_id,
-    unique(drim.padj$geneID),
-    drim.padj$txID,
+    unique(as.character(drim.padj$geneID)),
+    as.character(drim.padj$txID),
     ts$GeneID,
     ts.f$GeneID,
     ts.tx$ExonID,
-    unique(ds.padj$geneID),
-    ds.padj$txID
+    unique(as.character(ds.padj$geneID)),
+    as.character(ds.padj$txID)
   ),
   FDR = c(
     res$adj_pvalue,
@@ -299,18 +302,18 @@ results.all$test <-
 # manual colour scheme
 col_impression <- c("#D96A70", "#C68C81", "#303C24", "#476937", "#9FC675", "#8E3055", "#D5A2CB", "#3C5880", "#708FA6")
 
-pdf("plots/DTU_FDR_short.pdf", width = 17, height = 5)
-ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
+# pdf("plots/DTU_FDR_short.pdf", width = 17, height = 5)
+p1 <- ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
   geom_boxplot(alpha=.6, outlier.shape = NA)+
   geom_point(position = position_jitterdodge(jitter.height = .02), cex=.7, alpha = .7)+
   facet_grid(.~level) +
   theme_bw() +
-  theme(text = element_text(size=20), legend.text = element_text(size=14))+
+  theme(text = element_text(size=20), legend.text = element_text(size=14), legend.position = "none")+
   geom_hline(yintercept = 0.05, linetype="dashed") +
   labs(y = "Adjusted p-value", x="is DTU") +
   scale_fill_manual(values = col_impression) +
   scale_colour_manual(values = col_impression)
-dev.off()
+# dev.off()
 ```
 Calculate FDR and TPR
 
@@ -322,6 +325,11 @@ FDR <- sapply(unique(results.all$test), function(x){
   dt = sum(results$sig)
   return(c(as.character(x), fd/dt))
 }, simplify = TRUE)
+FDR <- as.data.frame(t(FDR))
+FDR$V2 <- as.numeric(as.character(FDR$V2))
+colnames(FDR) <- c("test", "FDR")
+FDR$test <- factor(FDR$test, levels = c("DRIMSeq_gene", "DRIMSeq_stageR_gene","diffSplice_simes", "diffSplice_F", "diffSplice_stageR_gene", "DRIMSeq_feature", "DRIMSeq_stageR_transcript",
+                               "diffSplice_t", "diffSplice_stageR_transcript"))
 FDR
 
 TPR <- sapply(unique(results.all$test), function(x){
@@ -330,13 +338,50 @@ TPR <- sapply(unique(results.all$test), function(x){
   pc = sum(results$DTU)
   return(c(as.character(x), td/pc))
 }, simplify = TRUE)
-# TPR <- as.data.frame(t(TPR))
-# TPR$V2 <- as.numeric(as.character(TPR$V2))
-# colnames(TPR) <- c("test", "TPR")
-# TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_feature", "DRIMSeq_stageR_gene", "DRIMSeq_stageR_transcript", "diffSplice_simes", "diffSplice_F", "diffSplice_t", "diffSplice_stageR_gene", "diffSplice_stageR_transcript" ))
+TPR <- as.data.frame(t(TPR))
+TPR$V2 <- as.numeric(as.character(TPR$V2))
+colnames(TPR) <- c("test", "TPR")
+TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_stageR_gene","diffSplice_simes", "diffSplice_F", "diffSplice_stageR_gene", "DRIMSeq_feature", "DRIMSeq_stageR_transcript",
+                               "diffSplice_t", "diffSplice_stageR_transcript" ))
 TPR
 ```
+```{r}
+# pdf("plots/DTU_TPR_short.pdf", height=5, width=8)
+p2 <- ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  labs (x = "Test", y = "True positive rate") +
+  # scale_fill_brewer(palette = "Set1")+
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), text = element_text(size=16),
+        legend.position = "none") +
+  scale_fill_manual(values = col_impression)
+# dev.off()
 
+pdf("plots/DTU_FDR0_short.pdf", height=5, width=8)
+ggplot(FDR, aes(x=test, y=FDR, fill=test)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  labs (x = "Test", y = "False discovery rate") +
+  # scale_fill_brewer(palette = "Set1")+
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), text = element_text(size=16),
+        legend.position = "none") +
+  scale_fill_manual(values = col_impression)
+dev.off()
+
+library(cowplot)
+pdf("plots/DTU_short.pdf", height = 10, width = 8)
+plot_grid(p1, p2, labels = c('A', 'B'), label_size = 24, nrow=2)
+dev.off()
+```
+
+Look into FP and FN genes
+
+```{r}
+FP <- na.omit(results.all[results.all$DTU==FALSE & results.all$FDR<0.05,])
+FN <- na.omit(results.all[results.all$DTU==TRUE & results.all$FDR>0.05,])
+FP
+FN
+```
 
 save some results to table
 ```{r}
