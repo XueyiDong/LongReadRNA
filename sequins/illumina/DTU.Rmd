@@ -347,7 +347,7 @@ TPR
 ```
 ```{r}
 # pdf("plots/DTU_TPR_short.pdf", height=5, width=8)
-p2 <- ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
+p3 <- ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   labs (x = "Test", y = "True positive rate") +
@@ -358,7 +358,7 @@ p2 <- ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
 # dev.off()
 
 pdf("plots/DTU_FDR0_short.pdf", height=5, width=8)
-ggplot(FDR, aes(x=test, y=FDR, fill=test)) +
+p2 <- ggplot(FDR, aes(x=test, y=FDR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   labs (x = "Test", y = "False discovery rate") +
@@ -370,7 +370,7 @@ dev.off()
 
 library(cowplot)
 pdf("plots/DTU_short.pdf", height = 10, width = 8)
-plot_grid(p1, p2, labels = c('A', 'B'), label_size = 24, nrow=2)
+plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 24, nrow=3)
 dev.off()
 ```
 

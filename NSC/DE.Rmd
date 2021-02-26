@@ -143,6 +143,7 @@ barplot(v$targets$sample.weights, names = 1:length(v$targets$sample.weights),
         xlab = "Sample", ylab = "Weight", col=col[x$samples$group],
         cex.lab = 1.5, cex.axis = 1.5)
 abline(h = 1, col = 2, lty = 2)
+legend("topright", c("WT", "Smchd1-null"), text.col = col[c(1,2)], cex = 1.25)
 dev.off()
 
 pdf("plots/voomTrend.pdf", height = 5, width = 8)
@@ -245,7 +246,6 @@ cat("Test for Kelan's genes in Smchd1-null vs WT  \n")
 print(roast(v, index.all, gene.weights = gene.weights[index.all], design=design))
 cat("\n")
 
-
 barcodeplot(efit$t[, 2], index=index.all,
             gene.weights = gene.weights[index.all])
 
@@ -277,12 +277,17 @@ print(roast(v, index.strict, gene.weights = gene.weights[index.strict],
 Barcode plot
 
 ```{r}
-pdf("plots/barcodeStrict.pdf", height = 5, width = 8)
+pdf("plots/barcodeStrictLegend.pdf", height = 5, width = 8)
 barcodeplot(efit$t[, 2], index=index.strict,
             gene.weights = gene.weights[index.strict],
             labels = c("WT", "Smchd1-null"),
             xlab = "Moderated t",
             cex.lab = 1.8, cex.axis = 2, cex = 1.5)
+legend("top", legend = c("Short-read up genes", "Short-read down genes"),
+       # lty = 1,
+       col = c("red", "blue"),
+         text.col = c("red", "blue"),
+         cex = 1.2)
 dev.off()
 ```
 
@@ -345,6 +350,8 @@ plot.t <- smoothScatter(tt$t, -tt.chen$t[m],
               )
 abline(coef = c(0, 1),  lty=2)
 dev.off()
+
+
 ```
 
 ### Compare log FC in glimma plot
