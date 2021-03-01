@@ -7,14 +7,16 @@
 
 export PATH=$PATH:/wehisan/home/allstaff/d/dong.x/Programs/minimap2
 module load samtools/1.7
-# mapping rep1 using minimap2
-cd /wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/
-mkdir -p ./results/rebasecall/minimap2_mm10
-# cd results/minimap2_mm10
+workdir=/wehisan/general/academic/seq_data/quentin/Nanopore/Smchd1-NSC-cDNA/
+juncbed=/wehisan/home/allstaff/d/dong.x/annotation/Mouse/gencode.junction.bed
+annofa=/wehisan/home/allstaff/d/dong.x/annotation/Mouse/mm10/mm10.fa
+datadir=./data/rebasecall/pass/merged/used
+bamdir=./results/rebasecall/minimap2_mm10
 
+cd $workdir
+mkdir -p ./results/rebasecall/minimap2_mm10
 
 for sample in barcode07 barcode{10..13} barcode{15..17} 
-# for sample in barcode10
-do minimap2 -ax splice -uf -k14 --junc-bed  /wehisan/home/allstaff/d/dong.x/annotation/Mouse/gencode.junction.bed /wehisan/home/allstaff/d/dong.x/annotation/Mouse/mm10/mm10.fa ./data/rebasecall/pass/merged/used/$sample.fq.gz | samtools view -b | samtools sort > ./results/rebasecall/minimap2_mm10/$sample.sorted.bam
-samtools index ./results/rebasecall/minimap2_mm10/$sample.sorted.bam $sample.sorted.bam.bai
+do minimap2 -ax splice -uf -k14 --junc-bed  $juncbed $annofa $datadir/$sample.fq.gz | samtools view -b | samtools sort > $bamdir/$sample.sorted.bam
+samtools index $bamdir/$sample.sorted.bam $bamdir/$sample.sorted.bam.bai
 done
