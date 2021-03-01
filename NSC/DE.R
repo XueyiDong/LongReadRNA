@@ -1,4 +1,4 @@
-counts <- readRDS("counts.RDS")
+counts <- readRDS("./counts.RDS")
 library(edgeR)
 library(limma)
 x <- DGEList(counts = fc$counts)

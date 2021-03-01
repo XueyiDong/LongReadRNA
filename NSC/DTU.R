@@ -1,0 +1,323 @@
+library(DRIMSeq)
+library(limma)
+library(edgeR)
+
+## ----loadData--------------------------------------------------------
+scBarcode <- read.delim("./flames/results/pseudo_barcode_annotation.csv", sep = ",", stringsAsFactors = FALSE)
+scBarcode$barcode <- sub(".fq.gz", "", scBarcode$file_name)
+scBarcode <- scBarcode[order(scBarcode$barcode), ]
+scBarcode$group <- c("WT", "Smchd1-null", "Smchd1-null", "WT", "WT",  "WT", "WT", "Smchd1-null")
+scBarcode
+
+counts <- read.csv("./flames/results/transcript_count.csv")
+m <- match(colnames(counts)[3:ncol(counts)], scBarcode$pseudo_barcode)
+colnames(counts)[3:ncol(counts)] <- scBarcode$barcode[m]
+colnames(counts)[1] <- "feature_id"
+# combine the wt sample that was sequenced twice
+counts$barcode07 <- counts$barcode07 + counts$barcode13
+BC13 <- which(colnames(counts)=="barcode13")
+counts <- counts[,-BC13]
+colnames(counts)[3:ncol(counts)] <- make.names(colnames(counts)[3:ncol(counts)])
+samples <- data.frame(sample_id = colnames(counts)[3:ncol(counts)], group=scBarcode$group[match(colnames(counts)[3:ncol(counts)], scBarcode$barcode)])
+
+
+## ----annotation------------------------------------------------------
+library(Mus.musculus)
+geneid <- as.character(counts$gene_id)
+geneid <- substr(geneid, 1, 18)
+genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENTREZID"), 
+                keytype="ENSEMBL")
+# genes <- genes[!duplicated(genes$ENSEMBL),]
+m <- match(geneid, genes$ENSEMBL)
+genes <- genes[m,]
+head(genes)
+
+
+
+
+
+geneCount <- aggregate(counts[,c(-1,-2)], by=list(counts$gene_id), FUN=sum)
+rownames(geneCount) <- geneCount[,1]
+geneCount <- geneCount[,-1]
+fc <- readRDS("counts.RDS")
+fcCount <- fc$counts
+colnames(fcCount) <- sub(".sorted.bam", "", colnames(fcCount))
+fcCount[,"barcode07"] <- fcCount[,"barcode07"] + fcCount[,"barcode13"]
+fcCount <- fcCount[, -5]
+samplenames = paste("sample", c(5, 7, 3, 6, 2, 4, 1))
+
+
+plotGeneCor <- function(i, g=geneCount, f=fcCount){
+  m.gene = match(rownames(g), rownames(f))
+  m.sample = match(colnames(g)[i], colnames(f))
+  cpmf = cpm(f, log=TRUE)
+  cpmg = cpm(g, log=TRUE)
+  corr = cor(cpmg[,i], cpmf[m.gene, m.sample], use = "complete.obs")
+  smoothScatter(cpmg[,i], cpmf[m.gene, m.sample],
+                 xlab = "log CPM of gathered gene count",
+                 ylab = "log CPM of direct gene count",
+                 main = paste0(samplenames[i], ", cor=", round(corr, 3)))
+  
+}
+
+pdf("plots/countComp.pdf", height = 4, width = 8)
+par(mfrow=c(2,4))
+for(i in 1:7){
+  plotGeneCor(i)
+  abline(coef=c(0,1), col="red")
+}
+dev.off()
+
+
+
+## ----dmDSdata--------------------------------------------------------
+d <- dmDSdata(counts = counts, samples = samples)
+d <- dmFilter(d, min_samps_gene_expr = 7, min_samps_feature_expr = 3, min_gene_expr = 10, min_feature_expr = 10, run_gene_twice = T)
+plotData(d)
+
+
+
+design <- model.matrix(~group, data=DRIMSeq::samples(d))
+colnames(design) <- sub("group", "", colnames(design))
+set.seed(1904)
+d <- suppressWarnings(dmPrecision(d, design, BPPARAM = BiocParallel::MulticoreParam(16)))
+
+plotPrecision(d)
+
+
+
+head(mean_expression(d))
+common_precision(d)
+head(genewise_precision(d))
+
+
+
+# look into NA dispersion genes
+NA.genes <- which(is.na(genewise_precision(d)))
+
+
+
+d <- suppressWarnings(dmFit(d, design = design, verbose=1, BPPARAM = BiocParallel::MulticoreParam(16)))
+head(proportions(d))
+
+
+
+d <- dmTest(d, coef = "WT")
+head(results(d))
+plotPValues(d)
+
+
+
+head(results(d, level = "feature"))
+plotPValues(d, level = "feature")
+
+
+
+res <- results(d)
+res.txp <- results(d, level = "feature")
+## turn NA p value into 1
+no.na <- function(x) ifelse(is.na(x), 1, x)
+res$pvalue <- no.na(res$pvalue)
+res.txp$pvalue <- no.na(res.txp$pvalue)
+
+# res <- res[order(res$pvalue, decreasing = FALSE), ]
+# m <- match(substr(res$gene_id, 1, 18), genes$ENSEMBL)
+# res <- cbind(res, SYMBOL=genes$SYMBOL[m])
+write.table(res, "DTUres.tsv", sep = "\t", row.names = FALSE)
+# top_gene_id <- res$gene_id[1]
+# TO DO: change group color; change title of plot to symbol
+library(RColorBrewer)
+library(ggplot2)
+col <- brewer.pal(3, "Set2")
+
+
+
+library(stageR)
+## Assign gene-level pvalues to the screening stage
+pScreen <- res$pvalue
+# strp <- function(x) substr(x,1,18)
+names(pScreen) <- results(d)$gene_id
+## Assign transcript-level pvalues to the confirmation stage
+pConfirmation <- matrix(res.txp$pvalue, ncol = 1)
+rownames(pConfirmation) <- res.txp$feature_id
+## Create the gene-transcript mapping
+tx2gene <- res.txp[,c("feature_id", "gene_id")]
+# for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
+## Create the stageRTx object and perform the stage-wise analysis
+stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
+alpha = 0.25)
+
+suppressWarnings({
+  drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+})
+head(drim.padj)
+write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
+
+
+
+pdf("plots/DTUPropPisd.pdf", height = 6, width =9)
+
+plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
+               group_colors = col[1:2], plot_type = "boxplot1") + 
+  ggtitle("Pisd") +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 0.5), 
+        text = element_text(size=10), 
+        legend.text=element_text(size=10)) 
+  
+dev.off()
+
+
+
+saveRDS(d, file="./d.RDS")
+
+plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group") + 
+  ggtitle("Pisd") +
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), 
+        text = element_text(size=12), 
+        legend.text=element_text(size=10))
+
+
+
+library(edgeR)
+library(limma)
+
+
+## ----filter----------------------------------------------------------
+# rownames(counts) <- counts$feature_id
+# y <- DGEList(counts=counts[,c(-1,-2)])
+# table(filter)
+# y <- y[filter,]
+
+# use dataset filtered by DRIMSeq
+y <- DGEList(counts = as.matrix(DRIMSeq::counts(d)[,c(-1, -2)]), samples = DRIMSeq::samples(d))
+rownames(y) <- counts(d)$feature_id
+
+
+## ----MDS-------------------------------------------------------------
+y <- calcNormFactors(y)
+y$samples
+cpm <- cpm(y, log=T)
+plotMDS(cpm, col=as.numeric(as.factor(y$samples$group)))
+
+
+## ----annotation2-----------------------------------------------------
+library(Mus.musculus)
+geneid <- counts(d)$gene_id
+geneid <- substr(geneid, 1, 18)
+genes <- select(Mus.musculus, keys=geneid, columns=c("SYMBOL", "TXCHROM","ENTREZID"), 
+                keytype="ENSEMBL")
+# genes <- genes[!duplicated(genes$ENSEMBL),]
+m <- match(geneid, genes$ENSEMBL)
+genes <- genes[m,]
+head(genes)
+y$genes <- genes
+
+
+## ----fit-------------------------------------------------------------
+v <- voom(y, design, plot=T)
+fit <- lmFit(v,design)
+efit <- eBayes(fit)
+dt <- decideTests(efit, p.value = 0.25)
+summary(dt)
+
+
+
+geneid <- counts(d)$gene_id
+featureid <- counts(d)$feature_id
+
+ex <- diffSplice(efit, geneid = geneid, exonid=featureid)
+ts <- topSplice(ex,  number=Inf)
+ts.tx <- topSplice(ex, test = "t", number = Inf)
+
+
+
+plotSplice(ex, geneid = "Pisd", genecolname="SYMBOL", FDR = 0.25)
+
+
+
+
+library(stageR)
+
+pScreen <- ts$P.Value
+names(pScreen) <- ts$GeneID
+pConfirmation <- matrix(ts.tx$P.Value, ncol = 1)
+rownames(pConfirmation) <- ts.tx$ExonID
+
+tx2gene <- ts.tx[, c(6, 5)]
+
+stageRObj2 <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
+pScreenAdjusted = FALSE, tx2gene = tx2gene)
+stageRObj2 <- stageWiseAdjustment(object = stageRObj2, method = "dtu",
+alpha = 0.25)
+suppressWarnings({
+  ds.padj <- getAdjustedPValues(stageRObj2, order=TRUE,
+                                  onlySignificantGenes=FALSE)
+})
+head(ds.padj)
+
+
+
+
+
+ts.short <- read.table("Chen_et_al_2015_PNAS/topSplice_simes.tsv", stringsAsFactors = FALSE, sep = "\t", header=TRUE)
+
+calcTopN <- function(tl, ts, n){
+  num <- sapply(1:n, function(x){
+    length(intersect(tl[1:x, "GeneID"], ts[1:x, "GeneID"]))
+  }, simplify = TRUE)
+  intTopN <- data.frame(
+    number = 1:n,
+    intersect = num
+  )
+  return(intTopN)
+}
+
+top200 <- calcTopN(ts, ts.short, 200)
+ggplot(top200, aes(x=number, y=intersect)) +geom_line()
+
+
+
+res.short <- read.table("Chen_et_al_2015_PNAS/drimseq_gene.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+res.short$symbol <- genes$SYMBOL[match(substr(res.short$gene_id, 1, 18), genes$ENSEMBL)]
+m <- match(res.short$gene_id, res$gene_id)
+cor(res[m, "lr"], res.short$lr, use = "complete.obs")
+cor(res[m, "pvalue"], res.short$pvalue, use = "complete.obs")
+
+
+
+proportions.short <- read.table("Chen_et_al_2015_PNAS/drimseq_proportion.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+# only compare wt proportion
+m <- match(proportions.short$feature_id, proportions(d)$feature_id)
+cor(proportions(d)[m, 3], proportions.short$X113_C26VPACXX_ATCACG, use = "complete.obs")
+smoothScatter(proportions(d)[m, 3], proportions.short$X113_C26VPACXX_ATCACG)
+
+
+
+library(Gviz)
+library(GenomicFeatures)
+# library(biomaRt)
+gff <- "./flames/results/isoform_annotated.filtered.gff3"
+# gff <- "../scFLT/run1/pisd.gff3"
+anno <- makeTxDbFromGFF(gff, organism = "Mus musculus")
+
+# tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5")
+tr_Pisd <- GeneRegionTrack(anno, chromosome = "chr5", 
+                           start = 32736314, end = 32785626)
+# ensembl <- biomaRt::useMart("ensembl")
+# datasets <- biomaRt::listDatasets(ensembl)
+# ensembl <- biomaRt::useDataset("mmusculus_gene_ensembl", mart=ensembl)
+# biomTrack <- BiomartGeneRegionTrack(genome = "mm10", biomart = ensembl,  
+#                                     name = "ENSEMBL", symbol = "Pisd",
+#                                     filters=list(ensembl_transcript_id="ENSMUST00000201980")) 
+gtrack <- GenomeAxisTrack()
+pdf("plots/genePisd.pdf", width = 10, height = 5)
+plotTracks(list(gtrack, tr_Pisd), lwd = 1, lwd.grid = 1)
+dev.off()
+
+
+
+save.image("DTU.RData")
+
