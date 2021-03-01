@@ -1,48 +1,12 @@
----
-title: "smchd1 long read MommeD1 only analysis"
-author: "Xueyi Dong"
-date: "25/10/2019"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r}
 counts <- readRDS("counts.RDS")
-```
-
-```{r}
 library(edgeR)
 library(limma)
-# source("~/analysis/voom_group/voomByGroup.R")
-# x <- DGEList(counts = cbind(counts_run1$counts, counts_run2$counts))
 x <- DGEList(counts = fc$counts)
 colnames(x)<- c("BC07", paste0("BC", 10:13), paste0("BC", 15:17))
 x$samples$group <- factor(c("WT", "Smchd1-null", "Smchd1-null", "WT", "WT",  "WT", "WT", "Smchd1-null"), levels = c("WT", "Smchd1-null"))
 x$samples$run <- factor(rep(c(1, 2), c(4,4)))
-# x$samples$sample <- c("Fr31", "Fr46", "Fr42", "MD143", "MD142", "MD135", "Fr31", "Fr15", "Fr17", "MD114", "MD140", "Fr46")
 x$samples
 
-
-# pdf("plots/mds.pdf", height = 4, width = 4)
-# plotMDS(lcpm, col=col[x$samples$group], pch = c(16, 17)[x$samples$run], cex = 1.3)
-# legend("topright", 
-#        c("Smchd1-null run 1", "Smchd1-null run 2", "wt run 1", "wt run 2"), 
-#        pch = c(16, 17, 16, 17), 
-#        col = col[c(1, 1, 2, 2)], 
-#        text.col = col[c(1, 1, 2, 2)],
-#        pt.cex = 1.3)
-# dev.off()
-
-
-# plotMDS(removeBatchEffect(lcpm, batch=x$samples$run), col=col[x$samples$group], main="group")
-```
-
-Merge reads from the same sample that was sequenced twice
-
-```{r}
 # merge from run 2 to run 1
 x$counts[, 1] <- x$counts[,1] + x$counts[, 5]
 x$samples$lib.size[1] <- x$samples$lib.size[1] + x$samples$lib.size[5]
@@ -61,17 +25,13 @@ library(RColorBrewer)
 col <- brewer.pal(3, "Set2")
 # to match color
 col <- col[c(2,1,3)]
-
+# MDS plot
 pdf("plots/mds_merged.pdf", height = 5, width = 8)
-# par(xpd=TRUE, mar =c(4.1, 4.1, 2.1, 8.1))
 plotMDS(lcpm, col=col[x$samples$group], labels = 1:7, asp = 1,
         cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5)
-# plot(1,1, type="n", yaxt="n", xaxt="n", ylab="", xlab="", frame.plot=FALSE)
 legend("bottomright", c("WT", "Smchd1-null"), text.col = col[c(1,2)], cex = 1.25)
 dev.off()
-```
 
-```{r}
 pdf("plots/libsize.pdf", height = 4, width = 8)
 library(ggplot2)
 library(scales)
@@ -84,12 +44,8 @@ ggplot(x$samples, aes(x=sample, y=lib.size, fill=group)) +
   labs(y = "Library size", x = "Sample") +
   scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))
 dev.off()
-```
 
-
-### Annotation
-
-```{r annotation}
+# Annotation
 library(Mus.musculus)
 geneid <- rownames(x)
 geneid <- substr(geneid, 1, 18)
@@ -102,42 +58,17 @@ head(genes)
 genes$length <- fc$annotation$Length[match(rownames(x), fc$annotation$GeneID)]
 loglength = log(genes$length)
 x$genes <- genes
-```
 
-QC: gene length VS expression (CPM)
-
-```{r}
-
-pdf("plots/lengthcpm.pdf", height = 4, width = 8)
-par(mfrow=c(2,4))
-for (i in 1:7) {
-  smoothScatter(loglength, lcpm[,i], 
-              xlab = "log gene length", ylab = "log CPM",
-              main = paste0("Sample ", i, ", cor=", round(cor(loglength, lcpm[,i]), 3)))
-}
-dev.off()
-```
-
-
-
-
-### Design and contrast
-
-```{r}
 design <- model.matrix(~x$samples$group)
 colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))
-```
-
-```{r}
-# v <- voomByGroup(x, design=design, plot="all")
-pdf("plots/voom.pdf", height = 4, width = 8)
 v <- voomWithQualityWeights(x, design=design, plot=TRUE, col=col[x$samples$group], save.plot=TRUE)
+
+pdf("plots/voomTrend.pdf", height = 5, width = 8)
+plot(v$voom.xy$x, v$voom.xy$y, xlab = v$voom.xy$xlab, ylab = v$voom.xy$ylab,
+     pch = 16, cex = 0.25,
+     cex.lab = 1.5, cex.axis = 1.5)
+lines(v$voom.line, col = "red")
 dev.off()
-```
-
-Now customize voom plot for publication.
-
-```{r}
 pdf("plots/sampleWeights.pdf", height = 5, width = 8)
 barplot(v$targets$sample.weights, names = 1:length(v$targets$sample.weights),
         xlab = "Sample", ylab = "Weight", col=col[x$samples$group],
@@ -146,42 +77,14 @@ abline(h = 1, col = 2, lty = 2)
 legend("topright", c("WT", "Smchd1-null"), text.col = col[c(1,2)], cex = 1.25)
 dev.off()
 
-pdf("plots/voomTrend.pdf", height = 5, width = 8)
-plot(v$voom.xy$x, v$voom.xy$y, xlab = v$voom.xy$xlab, ylab = v$voom.xy$ylab,
-     pch = 16, cex = 0.25,
-     cex.lab = 1.5, cex.axis = 1.5)
-lines(v$voom.line, col = "red")
-dev.off()
-```
-
-
-
-### Fit
-
-```{r}
 fit <- lmFit(v, design = design)
-# fit <- contrasts.fit(fit, contrasts = cont)
 efit <- eBayes(fit)
 dt <- decideTests(efit, p.value = 0.25)
 summary(dt)
-```
 
-Wow - way more DE genes when we merge the rep samples!
-
-### Top table
-
-```{r toptable}
-# for (i in 1:3){
-  # cat(colnames(efit)[i], "\n")
-  print(topTable(efit, coef=1))
-  # cat("\n")
-# }
 tt <- topTable(efit, coef=1, number=Inf)
-```
+cor(tt$length, tt$AveExpr)
 
-length vs average expression
-
-```{r}
 library(ggplot2)
 library(viridis)
 pdf("plots/lengthAveExp.pdf", height = 4, width = 8)
@@ -190,18 +93,11 @@ ggplot(tt, aes(x=length, y=AveExpr)) +
   theme_bw() +
   labs(x="Gene length", y = "Average expression (log-CPM)", fill = "Density:\nnumber of \ngenes") +
   scale_x_continuous(trans = "log10") +
-  annotate(geom="text", x=40000, y=14, label=expression(paste(rho, "=0.035")), size=8) +
+  annotate(geom="text", x=6600, y=14, label=paste0("Pearson's r=", round(cor(tt$length, tt$AveExpr), 3)), size=8) +
   scale_fill_viridis(direction = -1, option="A") +
   theme(text=element_text(size = 20)) 
 dev.off()
 
-cor(tt$length, tt$AveExpr)
-```
-
-
-### MD plot
-
-```{r MDplot}
 sm <- which(efit$genes$SYMBOL=="Smchd1")
 imprinted <- which(efit$genes$SYMBOL %in% c("Ndn", "Mkrn3", "Peg12"))
 pdf("plots/md.pdf", height = 5, width = 8)
@@ -216,24 +112,12 @@ pdf("plots/md.pdf", height = 5, width = 8)
          pch = c(15, 16, 16, 16, 17),
          pt.cex = c(1.2, 1, 0.3, 1, 1.5))
 dev.off()
-```
 
-
-## geneset test from Chen et al. 2015
-```{r}
+# Compare to short-read results from Chen et al.
 up <- read.csv("./Chen_et_al_2015_PNAS/Upregulated_in_Smchd1_null.csv", skip=1)
 down <- read.csv("./Chen_et_al_2015_PNAS/Downregulated_in_Smchd1_null.csv", skip=1)
-
 index.up <- x$genes$ENTREZID %in% up$EntrezID
 index.down <- x$genes$ENTREZID %in% down$EntrezID
-
-
-plotMD(efit, status=as.numeric(index.up), column=1, main=paste0("Up genes in\n", colnames(efit)[1]))
-plotMD(efit, status=as.numeric(index.down), column=1, main=paste0("Down genes in\n", colnames(efit)[1]))
-```
-
-### roast
-```{r}
 index.all <- index.up | index.down
 gene.weights <- rep(0, nrow(x))
 m <- match(up$EntrezID, x$genes$ENTREZID)
@@ -241,19 +125,6 @@ gene.weights[m[!is.na(m)]] <- up$logFC[!is.na(m)]
 m <- match(down$EntrezID, x$genes$ENTREZID)
 gene.weights[m[!is.na(m)]] <- down$logFC[!is.na(m)]
 
-
-cat("Test for Kelan's genes in Smchd1-null vs WT  \n")
-print(roast(v, index.all, gene.weights = gene.weights[index.all], design=design))
-cat("\n")
-
-barcodeplot(efit$t[, 2], index=index.all,
-            gene.weights = gene.weights[index.all])
-
-```
-
-## Gene set test from Chen et al., use less genes
-
-```{r}
 up.strict <- up[up$adj.P.Val < 0.0001, ]
 down.strict <- down[down$adj.P.Val < 0.0001, ]
 dim(up.strict)
@@ -271,71 +142,28 @@ gene.weights[m[!is.na(m)]] <- down.strict$logFC[!is.na(m)]
 print(roast(v, index.strict, gene.weights = gene.weights[index.strict], 
             design=design, nrot = 9999))
 
-```
-
-
-Barcode plot
-
-```{r}
-pdf("plots/barcodeStrictLegend.pdf", height = 5, width = 8)
+pdf("plots/barcodeStrict.pdf", height = 5, width = 8)
 barcodeplot(efit$t[, 2], index=index.strict,
             gene.weights = gene.weights[index.strict],
             labels = c("WT", "Smchd1-null"),
             xlab = "Moderated t",
             cex.lab = 1.8, cex.axis = 2, cex = 1.5)
-legend("top", legend = c("Short-read up genes", "Short-read down genes"),
-       # lty = 1,
-       col = c("red", "blue"),
-         text.col = c("red", "blue"),
-         cex = 1.2)
+# legend("top", legend = c("Short-read up genes", "Short-read down genes"),
+#        col = c("red", "blue"),
+#          text.col = c("red", "blue"),
+#          cex = 1.2)s
 dev.off()
-```
 
-
-### Compare long read and old short read log FC
-
-```{r}
+# Compare t-statistic and logFC
 tt <- topTable(efit, number=Inf)
 tt.chen <- read.table("./Chen_et_al_2015_PNAS/TopTable.txt", sep="\t")
 m <- match(tt$ENTREZID, tt.chen$EntrezID)
 cor(tt$logFC, -tt.chen$logFC[m], use = "complete.obs")
-
+cor(tt$t, -tt.chen$t[m], use = "complete.obs")
 m.up <- match(up.strict$EntrezID, tt$ENTREZID)
 m.down <- match(down.strict$EntrezID, tt$ENTREZID)
 
 # plot long vs short logFC
-pdf("plots/LongvsShortlogFC.pdf", height = 5, width = 8)
-smoothScatter(tt$logFC, -tt.chen$logFC[m],
-              xlab = "long read log FC",
-              ylab = "short read log FC",
-              )
-abline(coef = c(0, 1), lty = 2)
-# abline(v=0, col="grey")
-# abline(h=0, col="grey")
-# highlight significant genes
-# points(tt$logFC[m.up], -tt.chen$logFC[m][m.up], col="red", pch = 20)
-# points(tt$logFC[m.down], -tt.chen$logFC[m][m.down], col="green", pch = 20)
-dev.off()
-```
-
-Let's compare t.
-
-```{r}
-cor(tt$t, -tt.chen$t[m], use = "complete.obs")
-#plot long vs short t
-pdf("plots/LongvsShortt.pdf", height = 5, width = 8)
-smoothScatter(tt$t, -tt.chen$t[m],
-              xlab = "long read t statistic",
-              ylab = "short read t statistic",
-              )
-abline(coef = c(0, 1),  lty=2)
-# highlight significant genes
-# points(tt$t[m.up], -tt.chen$t[m][m.up], col="red", pch = 20)
-# points(tt$t[m.down], -tt.chen$t[m][m.down], col="green", pch = 20)
-dev.off()
-```
-
-```{r}
 library(cowplot)
 pdf("plots/LongvsShorttAndLogFC.pdf", height = 5, width = 8)
 par(mfrow=c(1,2))
@@ -351,52 +179,4 @@ plot.t <- smoothScatter(tt$t, -tt.chen$t[m],
 abline(coef = c(0, 1),  lty=2)
 dev.off()
 
-
-```
-
-### Compare log FC in glimma plot
-
-```{r}
-m <- match(tt$ENTREZID, tt.chen$EntrezID)
-m2 <- match(tt$ENTREZID, rownames(lcpm))
-rownames(x$genes) <- x$genes$ENTREZID
-genes <- x$genes[m2,]
-genes$long.read.adj.P.Val <- tt$adj.P.Val
-genes$short.read.adj.P.Val <- tt.chen$adj.P.Val[m]
-glXYPlot(tt$logFC, -tt.chen$logFC[m], counts = lcpm[m2,], launch=FALSE, 
-         groups = x$samples$group,
-         anno = genes,
-         side.main = "SYMBOL",
-         xlab = "long read logFC", ylab = "short read logFC",
-         status = dt[m2,]
-         )
-```
-
-See if any gene is changed to different direction in the two datasets
-
-```{r}
-up.long <- tt$ENTREZID[tt$adj.P.Val <= 0.3 & tt$logFC > 0]
-down.long <- tt$ENTREZID[tt$adj.P.Val <= 0.3 & tt$logFC < 0]
-up.long[up.long %in% down.strict$EntrezID]
-down.long[down.long %in% up.strict$EntrezID]
-```
-
-Yes there is some.
-
-
-## Save top table
-
-```{r}
-write.table(topTable(efit, coef=1, n=Inf), file = "results/TopTableMD.txt", sep="\t")
-```
-
-
-```{r}
-save.image("DE.RData")
-```
-
-
-```{r}
 sessionInfo()
-```
-
