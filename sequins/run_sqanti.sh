@@ -19,15 +19,15 @@ python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
   /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf \
   /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_decoychr_2.4.fa -g
 
-# python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
-#   ./talon/sequins_talon_talon.gtf \
-#   /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf \
-#   /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_decoychr_2.4.fa -g
+python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
+  ./talon/sequins_talon_talon.gtf \
+  /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf \
+  /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_decoychr_2.4.fa -g
 
-# cd ./flair
+cd ./flair
 
-# python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
-#   flair.collapse.isoforms.gtf \
-#   /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf \
-#   /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_decoychr_2.4.fa -g
+python /wehisan/home/allstaff/d/dong.x/Programs/SQANTI/sqanti_qc.py \
+  flair.collapse.isoforms.gtf \
+  /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_annotation_2.4.gtf \
+  /wehisan/home/allstaff/d/dong.x/annotation/sequins/rnasequin_decoychr_2.4.fa -g
 

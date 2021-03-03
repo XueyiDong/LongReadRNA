@@ -30,10 +30,3 @@ python $flairdir/flair.py collapse -g $anno/rnasequin_decoychr_2.4.fa -f $anno/r
 
 # # quantify
 python $flairdir/flair.py quantify -r reads_manifest.tsv -i flair.collapse.isoforms.fa -t 8 --temp_dir ./tmp
-
-# # collapse again
-# reads_rmbc=/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/fastq_pass/merged/all.fastq
-# python $flairdir/flair.py collapse -g $anno/rnasequin_decoychr_2.4.fa -r $reads_rmbc -q flair_all_corrected.rmScBc.bed -t 8 --temp_dir ./tmp -o flair.collapse.rmScBc
-
-# quantify
-# python $flairdir/flair.py quantify -r reads_manifest.tsv -i flair.collapse.rmScBc.isoforms.fa -t 4 --temp_dir ./tmp
