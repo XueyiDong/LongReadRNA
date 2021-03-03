@@ -1,34 +1,15 @@
----
-title: "DTU analysis for sequins Illumina data salmon counts"
-author: "Xueyi Dong"
-date: "23/11/2020"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-Organize transcript count data and annotation
-
-```{r}
 datadir="/stornext/General/data/user_managed/grpu_mritchie_1/long_RNA_benchmark/Illumina_April19/results/salmon"
 samples <- c("1-H1975-1_S1","2-H1975-2_S2", "6-HCC-1_S6", "7-HCC-2_S7")
 quant <- file.path(datadir, samples, "quant.sf")
 library(tximport)
 txi <- tximport(quant, type="salmon", txOut=TRUE, countsFromAbundance = "scaledTPM")
 library(GenomicFeatures)
-gtf <- "/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/20200228_YPRDP_2xsequin_mixAB/flames/isoform_annotated.filtered.gff3"
+gtf <- "../flames/results/isoform_annotated.filtered.gff3"
 txdb <- makeTxDbFromGFF(gtf)
 txdf <- select(txdb, keys(txdb, "GENEID"), "TXNAME", "GENEID") 
 tab <- table(txdf$GENEID) 
 txdf$ntx <- tab[match(txdf$GENEID, names(tab))]
-```
 
-
-## DTU analysis using DRIMSeq
-
-```{r}
 library(DRIMSeq)
 samples <- data.frame(
   sample_id = make.names(samples),
@@ -41,28 +22,20 @@ counts <- cbind(txdf$GENEID, txdf$TXNAME, counts)
 colnames(counts) <- c("gene_id", "feature_id", samples$sample_id)
 d <- dmDSdata(counts = counts, samples = samples)
 d
-```
 
-
-### count vs annotation plot
-
-For long read data, we used CPM. But for short read data, use TPM to adjust length bias.
-
-```{r}
-anno <- read.delim("/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/Mike_seqin/annotations/rnasequin_isoforms_2.4.tsv", sep = "\t", stringsAsFactors = FALSE)
+anno <- read.delim("../annotations/rnasequin_isoforms_2.4.tsv", sep = "\t", stringsAsFactors = FALSE)
 m <- match(anno$NAME, as.character(counts$feature_id))
 annoData <- cbind(anno, counts[m, 3:6])
-# colnames(annoData)[5:8] <- paste0("mix", c("A1", "A2", "B1", "B2"))
 annoData <- data.table::melt(annoData, id.vars = 1:4)
 annoData$exp <-annoData$MIX_A
 annoData$exp[annoData$variable %in% c("6-HCC-1_S6", "7-HCC-2_S7")] <- 
   annoData$MIX_B[annoData$variable %in% c("6-HCC-1_S6", "7-HCC-2_S7")]
 colnames(annoData)[5] <- "sample"
-# annoData$sample <- factor(annoData$sample, levels = c("mixA1", "mixA2", "mixB1", "mixB2"))
 cor(annoData$exp, annoData$value, use = "complete.obs")
 
 library(ggplot2)
 library(scales)
+# Supp Fig S7
 pdf("plots/countsVsAnno.pdf", height = 5, width = 8)
 ggplot(annoData, aes(x=exp, y=value, colour=sample)) +
   geom_point() +
@@ -72,46 +45,22 @@ ggplot(annoData, aes(x=exp, y=value, colour=sample)) +
   labs(x = "Expected abundance", y = "TPM") +
   scale_colour_manual(values = c("#869700", "#D12300", "#071535", "#54B5E1"))+
   theme(text = element_text(size = 20)) +
-  annotate(geom="text", x=100, y=3000000, label=expression(paste(rho, "=0.86")), size=8) 
+  annotate(geom="text", x=100, y=3000000, label=paste("Pearson's r=", round(cor(annoData$exp, annoData$value, use = "complete.obs"), 2)), size=8) 
 dev.off()
-```
 
-
-
-
-```{r}
 d <- dmFilter(d, min_samps_gene_expr = 2, min_samps_feature_expr = 2, min_gene_expr = 10, min_feature_expr = 10, run_gene_twice = T)
 plotData(d)
-```
-
-```{r}
 design <- model.matrix(~group, data=DRIMSeq::samples(d))
 colnames(design) <- sub("group", "", colnames(design))
 set.seed(1904)
 d <- suppressWarnings(dmPrecision(d, design, BPPARAM = BiocParallel::MulticoreParam(8)))
-
 plotPrecision(d)
-```
-
-```{r}
 d <- suppressWarnings(dmFit(d, design = design, verbose=1, BPPARAM = BiocParallel::MulticoreParam(16)))
 head(proportions(d))
-```
-
-```{r}
 d <- dmTest(d, coef = "B")
 head(results(d))
-plotPValues(d)
-```
-
-```{r}
 head(results(d, level = "feature"))
-plotPValues(d, level = "feature")
-```
 
-stageR analysis
-
-```{r}
 res <- results(d)
 res.txp <- results(d, level = "feature")
 no.na <- function(x) ifelse(is.na(x), 1, x) 
@@ -121,31 +70,23 @@ res.txp$pvalue <- no.na(res.txp$pvalue)
 library(stageR)
 ## Assign gene-level pvalues to the screening stage
 pScreen <- res$pvalue
-# strp <- function(x) substr(x,1,18)
 names(pScreen) <- results(d)$gene_id
 ## Assign transcript-level pvalues to the confirmation stage
 pConfirmation <- matrix(res.txp$pvalue, ncol = 1)
 rownames(pConfirmation) <- res.txp$feature_id
 ## Create the gene-transcript mapping
 tx2gene <- res.txp[,c("feature_id", "gene_id")]
-# for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
 ## Create the stageRTx object and perform the stage-wise analysis
 stageRObj <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
 pScreenAdjusted = FALSE, tx2gene = tx2gene)
 stageRObj <- stageWiseAdjustment(object = stageRObj, method = "dtu",
 alpha = 0.05)
-
 suppressWarnings({
   drim.padj <- getAdjustedPValues(stageRObj, order=TRUE,
                                   onlySignificantGenes=FALSE)
 })
 head(drim.padj)
-# write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
-```
 
-## run diffSplice
-
-```{r}
 library(edgeR)
 library(limma)
 y <- DGEList(counts = as.matrix(DRIMSeq::counts(d)[,c(-1, -2)]), samples = DRIMSeq::samples(d))
@@ -154,36 +95,17 @@ y <- calcNormFactors(y)
 y$samples
 cpm <- cpm(y, log=T)
 plotMDS(cpm, col=as.numeric(as.factor(y$samples$group)))
-```
-
-```{r fit}
 v <- voom(y, design, plot=T)
 fit <- lmFit(v,design)
 efit <- eBayes(fit)
-dt <- decideTests(efit, p.value = 0.25)
-summary(dt)
-```
-
-```{r}
 geneid <- counts(d)$gene_id
 featureid <- counts(d)$feature_id
-
 ex <- diffSplice(efit, geneid = geneid, exonid=featureid)
 ts <- topSplice(ex,  number=Inf)
 ts.tx <- topSplice(ex, test = "t", number = Inf)
 ts.f <- topSplice(ex, test = "F", number = Inf)
-
 head(ts)
 table(ts$FDR < 0.05)
-```
-
-
-
-Two-stage test for diffSplice
-
-```{r}
-
-library(stageR)
 
 pScreen <- ts$P.Value
 pScreen2 <- ts.f$P.Value
@@ -191,9 +113,7 @@ names(pScreen) <- ts$GeneID
 names(pScreen2) <- ts.f$GeneID
 pConfirmation <- matrix(ts.tx$P.Value, ncol = 1)
 rownames(pConfirmation) <- ts.tx$ExonID
-
 tx2gene <- ts.tx[,1:2]
-
 stageRObj2 <- stageRTx(pScreen = pScreen, pConfirmation = pConfirmation,
 pScreenAdjusted = FALSE, tx2gene = tx2gene)
 stageRObj2 <- stageWiseAdjustment(object = stageRObj2, method = "dtu",
@@ -211,17 +131,7 @@ suppressWarnings({
 head(ds.padj)
 head(ds.padj.f)
 
-```
-
-## check results
-
-Calculate FDR and TPR as did for long read.
-
-```{r}
 proportion <- readRDS("../proportion.RDS")
-proportion$FC <- proportion$MIX_A / proportion$MIX_B
-proportion$isChanges <- FALSE
-proportion$isChanges[abs(proportion$FC-1) > 0.001] <- TRUE
 a <- match(unique(drim.padj$geneID), drim.padj$geneID)
 b <- match(unique(ds.padj$geneID), ds.padj$geneID)
 c <- match(unique(ds.padj.f$geneID), ds.padj.f$geneID)
@@ -302,7 +212,7 @@ results.all$test <-
 # manual colour scheme
 col_impression <- c("#D96A70", "#C68C81", "#303C24", "#476937", "#9FC675", "#8E3055", "#D5A2CB", "#3C5880", "#708FA6")
 
-# pdf("plots/DTU_FDR_short.pdf", width = 17, height = 5)
+# Supp Fig S8A
 p1 <- ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)) +
   geom_boxplot(alpha=.6, outlier.shape = NA)+
   geom_point(position = position_jitterdodge(jitter.height = .02), cex=.7, alpha = .7)+
@@ -313,11 +223,7 @@ p1 <- ggplot(na.omit(results.all), aes(x = DTU, y = FDR, fill=test, colour=test)
   labs(y = "Adjusted p-value", x="is DTU") +
   scale_fill_manual(values = col_impression) +
   scale_colour_manual(values = col_impression)
-# dev.off()
-```
-Calculate FDR and TPR
 
-```{r}
 results.all$sig <- results.all$FDR < 0.05
 FDR <- sapply(unique(results.all$test), function(x){
   results = na.omit(results.all[results.all$test == x, ])
@@ -344,47 +250,35 @@ colnames(TPR) <- c("test", "TPR")
 TPR$test <- factor(TPR$test, levels = c("DRIMSeq_gene", "DRIMSeq_stageR_gene","diffSplice_simes", "diffSplice_F", "diffSplice_stageR_gene", "DRIMSeq_feature", "DRIMSeq_stageR_transcript",
                                "diffSplice_t", "diffSplice_stageR_transcript" ))
 TPR
-```
-```{r}
-# pdf("plots/DTU_TPR_short.pdf", height=5, width=8)
+
+
+# Supp Fig S8C
 p3 <- ggplot(TPR, aes(x=test, y=TPR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   labs (x = "Test", y = "True positive rate") +
-  # scale_fill_brewer(palette = "Set1")+
   theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), text = element_text(size=16),
         legend.position = "none") +
   scale_fill_manual(values = col_impression)
-# dev.off()
-
-pdf("plots/DTU_FDR0_short.pdf", height=5, width=8)
+# Supp fig S8B
 p2 <- ggplot(FDR, aes(x=test, y=FDR, fill=test)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   labs (x = "Test", y = "False discovery rate") +
-  # scale_fill_brewer(palette = "Set1")+
   theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1), text = element_text(size=16),
         legend.position = "none") +
   scale_fill_manual(values = col_impression)
-dev.off()
 
 library(cowplot)
 pdf("plots/DTU_short.pdf", height = 10, width = 8)
 plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 24, nrow=3)
 dev.off()
-```
 
-Look into FP and FN genes
-
-```{r}
 FP <- na.omit(results.all[results.all$DTU==FALSE & results.all$FDR<0.05,])
 FN <- na.omit(results.all[results.all$DTU==TRUE & results.all$FDR>0.05,])
 FP
 FN
-```
 
-save some results to table
-```{r}
 # gene level diffSplice result (simes)
 write.table(ts, "topSplice_simes.tsv", sep = "\t")
 # drimseq+stager results
@@ -393,8 +287,3 @@ write.table(drim.padj, "drimseq_stager.tsv", sep = "\t")
 write.table(res, "drimseq_gene.tsv", sep = "\t")
 # drimseq proportion
 write.table(proportions(d), "drimseq_proportion.tsv", sep="\t")
-
-```
-
-
-

@@ -20,6 +20,7 @@ proportion$MIX_B <- anno$MIX_B / geneanno$MIX_B[m]
 proportion$FC <- proportion$MIX_A / proportion$MIX_B
 proportion$isChanges <- FALSE
 proportion$isChanges[abs(proportion$FC-1) > 0.001] <- TRUE
+saveRDS(proportion, file="proportion.RDS")
 
 cpm <- cpm(data[3:6])
 m <- match(anno$NAME, data$transcript_id)

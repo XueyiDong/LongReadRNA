@@ -25,13 +25,13 @@ library(RColorBrewer)
 col <- brewer.pal(3, "Set2")
 # to match color
 col <- col[c(2,1,3)]
-# MDS plot
+# Fig 2C
 pdf("plots/mds_merged.pdf", height = 5, width = 8)
 plotMDS(lcpm, col=col[x$samples$group], labels = 1:7, asp = 1,
         cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5)
 legend("bottomright", c("WT", "Smchd1-null"), text.col = col[c(1,2)], cex = 1.25)
 dev.off()
-
+# Fig 1D
 pdf("plots/libsize.pdf", height = 4, width = 8)
 library(ggplot2)
 library(scales)
@@ -62,13 +62,14 @@ x$genes <- genes
 design <- model.matrix(~x$samples$group)
 colnames(design) <- sub("x\\$samples\\$group", "", colnames(design))
 v <- voomWithQualityWeights(x, design=design, plot=TRUE, col=col[x$samples$group], save.plot=TRUE)
-
+# Fig 2D
 pdf("plots/voomTrend.pdf", height = 5, width = 8)
 plot(v$voom.xy$x, v$voom.xy$y, xlab = v$voom.xy$xlab, ylab = v$voom.xy$ylab,
      pch = 16, cex = 0.25,
      cex.lab = 1.5, cex.axis = 1.5)
 lines(v$voom.line, col = "red")
 dev.off()
+# Supp fig S4
 pdf("plots/sampleWeights.pdf", height = 5, width = 8)
 barplot(v$targets$sample.weights, names = 1:length(v$targets$sample.weights),
         xlab = "Sample", ylab = "Weight", col=col[x$samples$group],
@@ -87,6 +88,7 @@ cor(tt$length, tt$AveExpr)
 
 library(ggplot2)
 library(viridis)
+# Fig 1E
 pdf("plots/lengthAveExp.pdf", height = 4, width = 8)
 ggplot(tt, aes(x=length, y=AveExpr)) +
   stat_binhex() +
@@ -100,6 +102,7 @@ dev.off()
 
 sm <- which(efit$genes$SYMBOL=="Smchd1")
 imprinted <- which(efit$genes$SYMBOL %in% c("Ndn", "Mkrn3", "Peg12"))
+# Fig 2E
 pdf("plots/md.pdf", height = 5, width = 8)
   plotMD(efit, status=dt[,2], column=2, values=c(1,-1), hl.col=c("red", "blue"), legend=FALSE, main=NA,
          cex.lab = 1.5, cex.axis = 1.5)
@@ -141,7 +144,7 @@ gene.weights[m[!is.na(m)]] <- down.strict$logFC[!is.na(m)]
 
 print(roast(v, index.strict, gene.weights = gene.weights[index.strict], 
             design=design, nrot = 9999))
-
+# Fig 2F
 pdf("plots/barcodeStrict.pdf", height = 5, width = 8)
 barcodeplot(efit$t[, 2], index=index.strict,
             gene.weights = gene.weights[index.strict],
@@ -163,7 +166,7 @@ cor(tt$t, -tt.chen$t[m], use = "complete.obs")
 m.up <- match(up.strict$EntrezID, tt$ENTREZID)
 m.down <- match(down.strict$EntrezID, tt$ENTREZID)
 
-# plot long vs short logFC
+# Supp fig S5
 library(cowplot)
 pdf("plots/LongvsShorttAndLogFC.pdf", height = 5, width = 8)
 par(mfrow=c(1,2))

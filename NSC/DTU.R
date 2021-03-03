@@ -83,7 +83,7 @@ suppressWarnings({
 })
 head(drim.padj)
 write.table(drim.padj, file = "DTUpadj.txt", sep = "\t", row.names = FALSE)
-
+# Supp fig S13
 pdf("plots/DTUPropPisd.pdf", height = 6, width =9)
 plotProportions(d, gene_id = "ENSMUSG00000023452.19", group_variable = "group", 
                group_colors = col[1:2], plot_type = "boxplot1") + 
@@ -141,7 +141,7 @@ suppressWarnings({
 })
 head(ds.padj)
 
-# plot Pisd gene model
+# plot Pisd gene model (supp Fig S12)
 library(Gviz)
 library(GenomicFeatures)
 

@@ -6,7 +6,7 @@ readnum <- data.frame(
   category = factor(c("raw reads", "quality filtered reads", "demultiplexed reads", "reads from chosen samples", "gene counts"), 
                     levels = c("raw reads", "quality filtered reads", "demultiplexed reads", "reads from chosen samples", "gene counts"))
 )
-
+# Fig 1B
 pdf("totalreadnum.pdf", height = 4, width = 8)
 ggplot(readnum, aes(x=category, y=number)) +
   geom_bar(stat="identity") +

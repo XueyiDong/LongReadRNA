@@ -19,7 +19,7 @@ qcdata$LengthGroup <- gsub(",", ", ", qcdata$LengthGroup)
 qcdata$LengthGroup <- factor(qcdata$LengthGroup, levels = c(
   "[0, 500)", "[500, 1000)", "[1000, 3000)", "[3000, 1353320]"
 ))
-
+# Fig 1C
 pdf("plots/lengthQualityViolin.pdf", height = 4, width = 8)
 ggplot(qcdata, aes(x=LengthGroup, y=Qscore, fill=LengthGroup, colour = LengthGroup)) +
   geom_violin(alpha = 0.4) +
