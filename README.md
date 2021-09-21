@@ -1,6 +1,6 @@
 # The long and the short of it: unlocking nanopore long-read RNA sequencing data with short-read differential expression analysis tools
 
-This repository contains the code used to perform the analysis and generate the figures in the paper with the same title (currently available on [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.06.28.176727v1) ). Some intermidiate results of time- and resource-consuming tools are also provided.
+This repository contains the code used to perform the analysis and generate the figures in [the paper published on _NAR genomics and bioinformatics_](https://academic.oup.com/nargab/article/3/2/lqab028/6253498?login=true). Some intermidiate results of time- and resource-consuming tools are also provided.
 
 The specific version of *FLAMES* used in this project can be accessed [here](https://github.com/XueyiDong/FLAMES).
 
