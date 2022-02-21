@@ -35,6 +35,9 @@ txStat <- sapply(unique(readDF$seqnames), function(x){
   fl90 = sum(readDF.sel$covFraction >= 0.90) / nrow(readDF.sel)
   c(readDF.sel[1, "tx_len"], meanCovFrac, medianCovFraction, fl95, fl90, nrow(readDF.sel))
 }, simplify = TRUE)
+txStat <- as.data.frame(t(txStat))
+colnames(txStat) <- c("tx_len", "mean", "median", "fl95", "fl90", "count")
+txStat$log_count <- log(txStat$count)
 # Fig 3C
 pdf("plots/txLenFL.pdf", height = 5, width = 8)
 ggplot(txStat, aes(x=tx_len, y=fl95, colour = log_count))+
